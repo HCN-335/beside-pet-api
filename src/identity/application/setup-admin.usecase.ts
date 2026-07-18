@@ -14,15 +14,9 @@ import {
   PASSWORD_HASHER,
   SETUP_TOKEN_GATE,
 } from '@/identity/domain/port/tokens';
-import { CLOCK, type Clock } from '@/shared/clock/clock';
+import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import { type AccountView, toAccountView } from './dto/account-view';
-
-export interface SetupAdminCommand {
-  token: string;
-  username: string;
-  password: string;
-  company?: string;
-}
+import type { SetupAdminCommand } from './setup-admin.command';
 
 @Injectable()
 export class SetupAdminUseCase {
@@ -30,7 +24,7 @@ export class SetupAdminUseCase {
     @Inject(SETUP_TOKEN_GATE) private readonly gate: SetupTokenGate,
     @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasher,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(TIME_PROVIDER) private readonly time: TimeProvider,
   ) {}
 
   async execute(command: SetupAdminCommand): Promise<AccountView> {
@@ -46,9 +40,9 @@ export class SetupAdminUseCase {
       passwordHash: await this.hasher.hash(command.password),
       company: command.company ?? 'Beside Pet',
       role: 'admin',
-      createdAt: this.clock.now(),
+      createdAt: this.time.now(),
     });
     await this.accounts.save(admin);
-    return toAccountView(admin, this.clock.nowMillis());
+    return toAccountView(admin, this.time.nowMillis());
   }
 }

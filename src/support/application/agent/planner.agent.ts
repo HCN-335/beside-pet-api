@@ -5,7 +5,7 @@
  * Phase 3 swaps the body for an LLM call; the signature stays the same.
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { CLOCK, type Clock } from '@/shared/clock/clock';
+import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import type { GriefProfile } from '@/support/domain/model/grief-profile';
 import type { SupportPlan } from '@/support/domain/model/support-plan';
 import type { TaskFocus } from '@/support/domain/model/task-focus';
@@ -24,11 +24,11 @@ const TASK_FOCUSES: TaskFocus[] = [
 
 @Injectable()
 export class PlannerAgent {
-  constructor(@Inject(CLOCK) private readonly clock: Clock) {}
+  constructor(@Inject(TIME_PROVIDER) private readonly time: TimeProvider) {}
 
   plan(griefProfile: GriefProfile): SupportPlan {
     return {
-      createdAt: this.clock.now(),
+      createdAt: this.time.now(),
       pathFocus: PATH_FOCUS[griefProfile.griefPath],
       taskFocuses: TASK_FOCUSES.map((focus) => ({ ...focus })),
       cautions: cautionsFor(griefProfile),

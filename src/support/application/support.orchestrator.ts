@@ -8,11 +8,12 @@
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { crisisReply } from '@/safety/domain/safety-resources';
-import { CLOCK, type Clock } from '@/shared/clock/clock';
 import type { Locale } from '@/shared/locale';
+import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import { petNameOf, preferredLanguageOf } from '@/support/domain/model/grief-profile';
 import { isClosingTask, nextTask, type TaskId } from '@/support/domain/model/grief-task';
 import type { KnowledgeRef } from '@/support/domain/model/knowledge-ref';
+import type { Progression } from '@/support/domain/model/progression';
 import type { ReplyPhaseName } from '@/support/domain/model/reply-phase';
 import type { RiskAssessment } from '@/support/domain/model/risk-assessment';
 import type { Session } from '@/support/domain/model/session';
@@ -32,15 +33,12 @@ import type { ReplyContext } from '@/support/domain/port/reply-context';
 import type { SessionRepository } from '@/support/domain/port/session.repository';
 import { KNOWLEDGE_PORT, LLM_PORT, SESSION_REPOSITORY } from '@/support/domain/port/tokens';
 import { SafetyCheckService } from '@/support/domain/service/safety-check.service';
-import {
-  type Progression,
-  TaskProgressionService,
-} from '@/support/domain/service/task-progression.service';
+import { TaskProgressionService } from '@/support/domain/service/task-progression.service';
+import { PlannerAgent } from './agent/planner.agent';
+import { SummarizerAgent } from './agent/summarizer.agent';
+import { SupervisorAgent } from './agent/supervisor.agent';
 import { type TurnEvent, toDoneEvent, toMetaEvent } from './dto/turn-event';
 import { type TurnResult, toTurnResult } from './dto/turn-result';
-import { PlannerAgent } from './planner.agent';
-import { SummarizerAgent } from './summarizer.agent';
-import { SupervisorAgent } from './supervisor.agent';
 
 const KNOWLEDGE_LIMIT = 2;
 
@@ -66,7 +64,7 @@ export class SupportOrchestrator {
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     @Inject(KNOWLEDGE_PORT) private readonly knowledge: KnowledgePort,
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(TIME_PROVIDER) private readonly time: TimeProvider,
   ) {}
 
   /** First greeting turn (immediately after the session starts). */
@@ -75,7 +73,7 @@ export class SupportOrchestrator {
     this.ensurePlan(session);
     const knowledge = await this.knowledgeFor(session.task);
     const reply = await this.compose(session, resuming ? 'resume' : 'intro', locale, knowledge);
-    session.record('assistant', reply, this.clock.now());
+    session.record('assistant', reply, this.time.now());
     await this.sessions.save(session);
     return toTurnResult(session, reply);
   }
@@ -83,7 +81,7 @@ export class SupportOrchestrator {
   /** Handle one user turn. */
   async handle(session: Session, text: string): Promise<TurnResult> {
     const locale = preferredLanguageOf(session.griefProfile);
-    session.record('user', text, this.clock.now());
+    session.record('user', text, this.time.now());
 
     // 1) Safety first — on a crisis, immediately hand off with a fixed reply and close.
     const level = await this.riskLevel(text);
@@ -92,7 +90,7 @@ export class SupportOrchestrator {
       const fromTask = session.task;
       const reply = crisisReply(locale);
       session.close();
-      session.record('assistant', reply, this.clock.now());
+      session.record('assistant', reply, this.time.now());
       this.recordTurn(session, crisisRecord(fromTask, level, reply));
       this.summarize(session);
       await this.sessions.save(session);
@@ -108,7 +106,7 @@ export class SupportOrchestrator {
     if (isClosingTask(session.task)) {
       const reply = await this.compose(session, 'closing', locale, knowledge);
       session.close();
-      session.record('assistant', reply, this.clock.now());
+      session.record('assistant', reply, this.time.now());
       this.recordTurn(
         session,
         turnRecord('closing', fromTask, session, advanced, level, knowledge, reply),
@@ -121,7 +119,7 @@ export class SupportOrchestrator {
     // 4) Regular support reply: open a new stage, deepen the current one, or gently re-ask.
     const phase: ReplyPhaseName = advanced ? 'task' : lastEngaged ? 'deepen' : 'retry';
     const reply = await this.compose(session, phase, locale, knowledge, text);
-    session.record('assistant', reply, this.clock.now());
+    session.record('assistant', reply, this.time.now());
     this.recordTurn(
       session,
       turnRecord(phase, fromTask, session, advanced, level, knowledge, reply),
@@ -138,7 +136,7 @@ export class SupportOrchestrator {
     yield toMetaEvent(session);
     const phase: ReplyPhaseName = resuming ? 'resume' : 'intro';
     const reply = yield* this.streamReplyTokens(session, phase, locale, knowledge);
-    session.record('assistant', reply, this.clock.now());
+    session.record('assistant', reply, this.time.now());
     await this.sessions.save(session);
     yield toDoneEvent(session, reply);
   }
@@ -146,7 +144,7 @@ export class SupportOrchestrator {
   /** Streaming user turn — same decisions as handle(), emitted as SSE events. */
   async *handleStream(session: Session, text: string): AsyncIterable<TurnEvent> {
     const locale = preferredLanguageOf(session.griefProfile);
-    session.record('user', text, this.clock.now());
+    session.record('user', text, this.time.now());
 
     // 1) Safety first — a crisis hands off with a fixed reply and closes.
     const level = await this.riskLevel(text);
@@ -157,7 +155,7 @@ export class SupportOrchestrator {
       session.close();
       yield toMetaEvent(session);
       yield { kind: 'token', text: reply };
-      session.record('assistant', reply, this.clock.now());
+      session.record('assistant', reply, this.time.now());
       this.recordTurn(session, crisisRecord(fromTask, level, reply));
       this.summarize(session);
       await this.sessions.save(session);
@@ -184,7 +182,7 @@ export class SupportOrchestrator {
     if (closing) {
       session.close();
     }
-    session.record('assistant', reply, this.clock.now());
+    session.record('assistant', reply, this.time.now());
     this.recordTurn(
       session,
       turnRecord(phase, fromTask, session, advanced, level, knowledge, reply),
@@ -198,8 +196,8 @@ export class SupportOrchestrator {
 
   /**
    * Screens one user message for crisis risk. The deterministic keyword check is
-   * a fast path (also the stub-mode behavior); when it doesn't flag, the LLM does
-   * a language-agnostic assessment so non-Korean crisis signals are still caught.
+   * a fast path; when it doesn't flag, the LLM does a language-agnostic
+   * assessment so non-Korean crisis signals are still caught.
    * Union semantics — either one flags → crisis (safety favors false positives).
    */
   private async riskLevel(text: string): Promise<SupportLevel> {
@@ -301,7 +299,7 @@ export class SupportOrchestrator {
       tags: chunk.tags,
     }));
     const analysis: TurnAnalysis = {
-      at: this.clock.now(),
+      at: this.time.now(),
       task: session.task,
       phase: record.phase,
       risk,

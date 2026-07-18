@@ -1,10 +1,10 @@
 /**
- * luxon-clock.ts — Luxon-backed Clock. Produces UTC-absolute instants for the whole system.
+ * luxon-time-provider.ts — Luxon-backed TimeProvider. Produces UTC-absolute instants for the whole system.
  */
 import { DateTime } from 'luxon';
-import type { Clock } from './clock';
+import type { TimeProvider } from './time-provider';
 
-export class LuxonClock implements Clock {
+export class LuxonTimeProvider implements TimeProvider {
   now(): string {
     // toISO() is typed string | null; the ?? keeps the return type a string.
     return DateTime.utc().toISO() ?? new Date().toISOString();

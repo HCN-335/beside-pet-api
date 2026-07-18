@@ -6,8 +6,8 @@ import { ConfigModule } from '@nestjs/config';
 import { IdentityModule } from './identity/identity.module';
 import { persistenceModule } from './infrastructure/database/persistence.module';
 import { SafetyModule } from './safety/safety.module';
-import { ClockModule } from './shared/clock/clock.module';
 import { HealthController } from './shared/health.controller';
+import { TimeModule } from './shared/time/time.module';
 import { SupportModule } from './support/support.module';
 
 @Module({
@@ -17,7 +17,7 @@ import { SupportModule } from './support/support.module';
     // leak its DATABASE_URL into the in-memory dev run.
     ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
     persistenceModule(),
-    ClockModule,
+    TimeModule,
     IdentityModule,
     SupportModule,
     SafetyModule,

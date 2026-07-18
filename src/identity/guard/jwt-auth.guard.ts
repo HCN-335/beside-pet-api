@@ -13,7 +13,7 @@ import { isActive } from '@/identity/domain/model/account-status';
 import type { AccountRepository } from '@/identity/domain/port/account.repository';
 import type { TokenSigner } from '@/identity/domain/port/token-signer.port';
 import { ACCOUNT_REPOSITORY, TOKEN_SIGNER } from '@/identity/domain/port/tokens';
-import { CLOCK, type Clock } from '@/shared/clock/clock';
+import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import type { AuthenticatedAccount } from './authenticated-account';
 import { AUTH_COOKIE } from './cookie';
 
@@ -27,7 +27,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     @Inject(TOKEN_SIGNER) private readonly signer: TokenSigner,
     @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(TIME_PROVIDER) private readonly time: TimeProvider,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -42,7 +42,7 @@ export class JwtAuthGuard implements CanActivate {
     }
     const account = await this.accounts.findById(claims.sub);
     // Re-check on every request so revoked, deleted, and expired accounts are blocked immediately.
-    if (!account || !isActive(account.status) || account.isExpired(this.clock.nowMillis())) {
+    if (!account || !isActive(account.status) || account.isExpired(this.time.nowMillis())) {
       throw new UnauthorizedException('Account is unavailable');
     }
     request.account = {

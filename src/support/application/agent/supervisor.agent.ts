@@ -5,20 +5,12 @@
  * cost stays low. Deterministic in mock mode; LLM-judge later.
  */
 import { Injectable } from '@nestjs/common';
-import type { TaskId } from '@/support/domain/model/grief-task';
-import type { ReplyPhaseName } from '@/support/domain/model/reply-phase';
 import type { Supervision } from '@/support/domain/model/supervision';
 import { SUPPORT_WATCH, type SupportLevel } from '@/support/domain/model/support-level';
+import type { ReviewInput } from './review-input';
 
 /** Run a review every Nth turn even when nothing else triggers it. */
 const SAMPLE_EVERY = 3;
-
-export interface ReviewInput {
-  reply: string;
-  task: TaskId;
-  phase: ReplyPhaseName;
-  level: SupportLevel;
-}
 
 @Injectable()
 export class SupervisorAgent {

@@ -4,14 +4,14 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { AccountRepository } from '@/identity/domain/port/account.repository';
 import { ACCOUNT_REPOSITORY } from '@/identity/domain/port/tokens';
-import { CLOCK, type Clock } from '@/shared/clock/clock';
+import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import { type AccountView, toAccountView } from './dto/account-view';
 
 @Injectable()
 export class RevokeAccountUseCase {
   constructor(
     @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(TIME_PROVIDER) private readonly time: TimeProvider,
   ) {}
 
   async execute(accountId: string): Promise<AccountView> {
@@ -21,6 +21,6 @@ export class RevokeAccountUseCase {
     }
     account.revoke();
     await this.accounts.save(account);
-    return toAccountView(account, this.clock.nowMillis());
+    return toAccountView(account, this.time.nowMillis());
   }
 }

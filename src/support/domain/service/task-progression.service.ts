@@ -19,6 +19,7 @@
  * frontend mock's decision rules.
  */
 import { Injectable } from '@nestjs/common';
+import type { Progression } from '@/support/domain/model/progression';
 
 /** Stay on a stage for at least this many turns before a normal advance. */
 export const MIN_DEPTH = 3;
@@ -32,13 +33,6 @@ export const DISENGAGE_EXIT = 2;
 const DUNNO_PATTERN =
   /모르겠|기억.*안|말하기 (어|힘)|글쎄|모름|i don['’]?t know|dunno|don['’]?t remember|can['’]?t remember|not sure|no idea|hard to say/i;
 const MIN_MEANINGFUL_LENGTH = 8;
-
-export interface Progression {
-  /** Whether this turn advanced to the next stage (= not a follow-up). */
-  advanced: boolean;
-  /** Whether the latest answer engaged — drives deepen vs. a gentle re-ask. */
-  lastEngaged: boolean;
-}
 
 @Injectable()
 export class TaskProgressionService {

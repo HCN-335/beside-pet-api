@@ -1,0 +1,15 @@
+/**
+ * session-list-item.ts — one row of the owner's session list (newest first).
+ */
+import type { Locale } from '@/shared/locale';
+
+export interface SessionListItem {
+  sessionId: string;
+  closed: boolean;
+  reachedTask: number;
+  taskLabel: string;
+  progress: number;
+  petName?: string;
+  /** The session's conversation language — used to restore the returning user's UI locale. */
+  preferredLanguage: Locale;
+}

@@ -8,7 +8,7 @@ import type { AccountRepository } from '@/identity/domain/port/account.repositor
 import type { PasswordHasher } from '@/identity/domain/port/password-hasher.port';
 import type { TokenSigner } from '@/identity/domain/port/token-signer.port';
 import { ACCOUNT_REPOSITORY, PASSWORD_HASHER, TOKEN_SIGNER } from '@/identity/domain/port/tokens';
-import { CLOCK, type Clock } from '@/shared/clock/clock';
+import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import { toAccountView } from './dto/account-view';
 import type { LoginCommand } from './login-command';
 import type { LoginResult } from './login-result';
@@ -19,7 +19,7 @@ export class LoginUseCase {
     @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasher,
     @Inject(TOKEN_SIGNER) private readonly signer: TokenSigner,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(TIME_PROVIDER) private readonly time: TimeProvider,
   ) {}
 
   async execute(command: LoginCommand): Promise<LoginResult> {
@@ -35,12 +35,12 @@ export class LoginUseCase {
     if (!isActive(account.status)) {
       throw new UnauthorizedException('Account is unavailable');
     }
-    if (account.isExpired(this.clock.nowMillis())) {
+    if (account.isExpired(this.time.nowMillis())) {
       throw new UnauthorizedException('Account has expired');
     }
-    account.recordLogin(this.clock.now());
+    account.recordLogin(this.time.now());
     await this.accounts.save(account);
     const token = this.signer.sign({ sub: account.id, role: account.role });
-    return { token, account: toAccountView(account, this.clock.nowMillis()) };
+    return { token, account: toAccountView(account, this.time.nowMillis()) };
   }
 }

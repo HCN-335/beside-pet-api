@@ -4,7 +4,7 @@
  * TurnAnalysisEntity per analysis. The analyses are decomposed into queryable
  * columns on the way out and recomposed into TurnAnalysis on the way back.
  */
-import type { SessionSnapshot } from '@/support/domain/model/session';
+import type { SessionSnapshot } from '@/support/domain/model/session-snapshot';
 import type { TurnAnalysis } from '@/support/domain/model/turn-analysis';
 import { SessionEntity } from './session.entity';
 import { TurnAnalysisEntity } from './turn-analysis.entity';

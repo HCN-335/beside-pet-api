@@ -3,7 +3,8 @@
  * Saves/restores via snapshots, so the domain stays unchanged even when swapped for a Postgres adapter later.
  */
 import { Injectable } from '@nestjs/common';
-import { Session, type SessionSnapshot } from '@/support/domain/model/session';
+import { Session } from '@/support/domain/model/session';
+import type { SessionSnapshot } from '@/support/domain/model/session-snapshot';
 import type { SessionRepository } from '@/support/domain/port/session.repository';
 
 @Injectable()
