@@ -14,7 +14,6 @@ export interface SessionSummary {
   highestSupportLevel: SupportLevel;
   /** One-line recap of the session. */
   headline: string;
-  emotionsNoted: string[];
   /** Gentle follow-up suggestion. */
   followUp: string;
 }

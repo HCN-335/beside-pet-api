@@ -14,8 +14,6 @@ export interface ReportContext {
   reachedTask: TaskId;
   progress: number;
   locale: Locale;
-  /** Emotion labels surfaced during the session (e.g. 'longing', 'guilt'). */
-  emotions: string[];
   /** Whether a crisis support level was reached (adds a gentle resource note). */
   crisis: boolean;
   history: readonly Message[];
