@@ -16,6 +16,7 @@ export const toAccountEntity = (snapshot: AccountSnapshot): AccountEntity => {
   entity.createdAt = snapshot.createdAt;
   entity.lastLoginAt = snapshot.lastLoginAt;
   entity.expiresAt = snapshot.expiresAt;
+  entity.chatLanguage = snapshot.chatLanguage;
   return entity;
 };
 
@@ -29,4 +30,5 @@ export const toAccountSnapshot = (entity: AccountEntity): AccountSnapshot => ({
   createdAt: entity.createdAt,
   lastLoginAt: entity.lastLoginAt,
   expiresAt: entity.expiresAt,
+  chatLanguage: entity.chatLanguage,
 });

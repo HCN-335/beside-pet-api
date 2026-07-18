@@ -4,6 +4,7 @@
  * absolute expiry instant. State transitions happen only through methods.
  */
 import { DateTime } from 'luxon';
+import type { Locale } from '@/shared/locale';
 import type { AccountIssueInput } from './account-issue-input';
 import type { AccountSnapshot } from './account-snapshot';
 import type { AccountStatus } from './account-status';
@@ -20,6 +21,7 @@ export class Account {
     readonly createdAt: string,
     private _lastLoginAt: string | undefined,
     private _expiresAt: string | undefined,
+    private _chatLanguage: Locale | undefined,
   ) {}
 
   /** admin issues a new viewer/admin account. */
@@ -34,6 +36,7 @@ export class Account {
       input.createdAt,
       undefined,
       input.expiresAt,
+      undefined,
     );
   }
 
@@ -48,6 +51,7 @@ export class Account {
       snapshot.createdAt,
       snapshot.lastLoginAt,
       snapshot.expiresAt,
+      snapshot.chatLanguage,
     );
   }
 
@@ -62,6 +66,14 @@ export class Account {
   }
   get expiresAt(): string | undefined {
     return this._expiresAt;
+  }
+  /** Conversation language preference (independent of the app UI language). */
+  get chatLanguage(): Locale | undefined {
+    return this._chatLanguage;
+  }
+
+  setChatLanguage(language: Locale): void {
+    this._chatLanguage = language;
   }
 
   recordLogin(at: string): void {
@@ -104,6 +116,7 @@ export class Account {
       createdAt: this.createdAt,
       lastLoginAt: this._lastLoginAt,
       expiresAt: this._expiresAt,
+      chatLanguage: this._chatLanguage,
     };
   }
 }

@@ -5,6 +5,7 @@
 import type { Account } from '@/identity/domain/model/account';
 import type { AccountStatus } from '@/identity/domain/model/account-status';
 import type { Role } from '@/identity/domain/model/role';
+import type { Locale } from '@/shared/locale';
 
 export interface AccountView {
   id: string;
@@ -16,6 +17,7 @@ export interface AccountView {
   expired: boolean;
   createdAt: string;
   lastLoginAt?: string;
+  chatLanguage?: Locale;
 }
 
 export const toAccountView = (account: Account, nowMillis: number): AccountView => ({
@@ -28,4 +30,5 @@ export const toAccountView = (account: Account, nowMillis: number): AccountView 
   expired: account.isExpired(nowMillis),
   createdAt: account.createdAt,
   lastLoginAt: account.lastLoginAt,
+  chatLanguage: account.chatLanguage,
 });

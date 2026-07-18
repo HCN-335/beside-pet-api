@@ -28,8 +28,12 @@ export interface GriefProfile {
 /** Default support language when onboarding didn't record a preference. */
 export const DEFAULT_PREFERRED_LANGUAGE: Locale = 'en';
 
+/** Generic pet placeholder per conversation language (locale content, not code). */
+const PET_NAME_FALLBACK: Record<Locale, string> = { ko: '아이', en: 'your little one' };
+
 /** Display name used in utterances; falls back to a generic placeholder when not provided. */
-export const petNameOf = (griefProfile: GriefProfile): string => griefProfile.petName ?? '아이';
+export const petNameOf = (griefProfile: GriefProfile): string =>
+  griefProfile.petName ?? PET_NAME_FALLBACK[preferredLanguageOf(griefProfile)];
 
 /** The conversation language — the single source of truth for reply localization. */
 export const preferredLanguageOf = (griefProfile: GriefProfile): Locale =>

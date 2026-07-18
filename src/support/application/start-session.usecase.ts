@@ -6,21 +6,16 @@
  *    session and resume where the previous one left off (cross-session continuity).
  */
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import type { GriefProfile } from '@/support/domain/model/grief-profile';
+import type { AccountRepository } from '@/identity/domain/port/account.repository';
+import { ACCOUNT_REPOSITORY } from '@/identity/domain/port/tokens';
 import { FIRST_TASK, isClosingTask, type TaskId } from '@/support/domain/model/grief-task';
 import { Session } from '@/support/domain/model/session';
 import type { SessionRepository } from '@/support/domain/port/session.repository';
 import { SESSION_REPOSITORY } from '@/support/domain/port/tokens';
 import type { TurnEvent } from './dto/turn-event';
 import type { TurnResult } from './dto/turn-result';
+import type { StartSessionCommand } from './start-session.command';
 import { SupportOrchestrator } from './support.orchestrator';
-
-export interface StartSessionCommand {
-  sessionId: string;
-  ownerId: string;
-  /** Present for a first-time session (from onboarding); omitted to continue. */
-  griefProfile?: GriefProfile;
-}
 
 /** Everything needed to greet a freshly created session. */
 interface StartedSession {
@@ -33,6 +28,7 @@ export class StartSessionUseCase {
   constructor(
     private readonly orchestrator: SupportOrchestrator,
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
+    @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
   ) {}
 
   async execute(command: StartSessionCommand): Promise<TurnResult> {
@@ -48,8 +44,21 @@ export class StartSessionUseCase {
     yield* this.orchestrator.greetStream(session, resuming);
   }
 
-  /** Builds a first-time session from onboarding, or a continued one from history. */
+  /**
+   * Builds a first-time session from onboarding, or a continued one from history.
+   * Either way the owner's account-level conversation language wins over the
+   * profile snapshot, so the greeting already speaks the configured language.
+   */
   private async create(command: StartSessionCommand): Promise<StartedSession> {
+    const started = await this.createFromCommand(command);
+    const owner = await this.accounts.findById(command.ownerId);
+    if (owner?.chatLanguage) {
+      started.session.adoptPreferredLanguage(owner.chatLanguage);
+    }
+    return started;
+  }
+
+  private async createFromCommand(command: StartSessionCommand): Promise<StartedSession> {
     if (command.griefProfile) {
       return {
         session: Session.start(command.sessionId, command.ownerId, command.griefProfile),

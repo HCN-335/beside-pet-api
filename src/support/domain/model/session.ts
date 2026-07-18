@@ -5,9 +5,11 @@
  * Bound to an account (= the viewer who completed onboarding) via ownerId, providing the basis for ownership guards and per-company access.
  */
 
+import type { Locale } from '@/shared/locale';
 import type { GriefProfile } from './grief-profile';
 import { FIRST_TASK, type TaskId } from './grief-task';
 import { createMessage, type Message, type Role } from './message';
+import type { SessionSnapshot } from './session-snapshot';
 import type { SessionSummary } from './session-summary';
 import { SUPPORT_SAFE, type SupportLevel } from './support-level';
 import type { SupportPlan } from './support-plan';
@@ -17,7 +19,7 @@ export class Session {
   private constructor(
     readonly id: string,
     readonly ownerId: string,
-    readonly griefProfile: GriefProfile,
+    private _griefProfile: GriefProfile,
     private _task: TaskId,
     private _retryCount: number,
     private _supportLevel: SupportLevel,
@@ -71,6 +73,9 @@ export class Session {
     );
   }
 
+  get griefProfile(): GriefProfile {
+    return this._griefProfile;
+  }
   get task(): TaskId {
     return this._task;
   }
@@ -94,6 +99,13 @@ export class Session {
   }
   get summary(): SessionSummary | undefined {
     return this._summary;
+  }
+
+  /** Adopts the account-level conversation language (applied from the next turn). */
+  adoptPreferredLanguage(language: Locale): void {
+    if (this._griefProfile.preferredLanguage !== language) {
+      this._griefProfile = { ...this._griefProfile, preferredLanguage: language };
+    }
   }
 
   record(role: Role, text: string, at: string): void {
@@ -149,18 +161,4 @@ export class Session {
       summary: this._summary,
     };
   }
-}
-
-export interface SessionSnapshot {
-  id: string;
-  ownerId: string;
-  griefProfile: GriefProfile;
-  task: TaskId;
-  retryCount: number;
-  supportLevel: SupportLevel;
-  closed: boolean;
-  history: Message[];
-  plan?: SupportPlan;
-  analyses: TurnAnalysis[];
-  summary?: SessionSummary;
 }

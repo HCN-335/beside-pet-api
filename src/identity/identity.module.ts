@@ -8,11 +8,13 @@ import { CreateAccountUseCase } from './application/create-account.usecase';
 import { DeleteAccountUseCase } from './application/delete-account.usecase';
 import { ListAccountsQuery } from './application/list-accounts.query';
 import { LoginUseCase } from './application/login.usecase';
+import { MyProfileQuery } from './application/my-profile.query';
 import { ReactivateAccountUseCase } from './application/reactivate-account.usecase';
 import { RevokeAccountUseCase } from './application/revoke-account.usecase';
 import { SetExpiryUseCase } from './application/set-expiry.usecase';
 import { SetupAdminUseCase } from './application/setup-admin.usecase';
 import { SoftDeleteAccountUseCase } from './application/soft-delete-account.usecase';
+import { UpdateChatLanguageUseCase } from './application/update-chat-language.usecase';
 import { PASSWORD_HASHER, SETUP_TOKEN_GATE, TOKEN_SIGNER } from './domain/port/tokens';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { RolesGuard } from './guard/roles.guard';
@@ -36,6 +38,8 @@ import { AuthController } from './interface/auth.controller';
     SetExpiryUseCase,
     DeleteAccountUseCase,
     ListAccountsQuery,
+    MyProfileQuery,
+    UpdateChatLanguageUseCase,
     SetupAdminUseCase,
     AdminSetup,
     { provide: SETUP_TOKEN_GATE, useExisting: AdminSetup },

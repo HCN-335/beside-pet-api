@@ -2,15 +2,28 @@
  * auth.controller.ts — first-run setup, login/logout, my info.
  *  GET  /v1/auth/setup   is first-run setup still pending?
  *  POST /v1/auth/setup   one-time token → first admin account (+ signed in)
- *  POST /v1/auth/login   username + password → JWT (httpOnly cookie)
- *  POST /v1/auth/logout  expire the cookie
- *  GET  /v1/auth/me      current account (guard required)
+ *  POST  /v1/auth/login             username + password → JWT (httpOnly cookie)
+ *  POST  /v1/auth/logout            expire the cookie
+ *  GET   /v1/auth/me                current account incl. settings (guard required)
+ *  PATCH /v1/auth/me/chat-language  set the conversation language (guard required)
  */
-import { Body, Controller, Get, HttpCode, Inject, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Patch,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import type { AccountView } from '../application/dto/account-view';
 import { LoginUseCase } from '../application/login.usecase';
+import { MyProfileQuery } from '../application/my-profile.query';
 import { SetupAdminUseCase } from '../application/setup-admin.usecase';
+import { UpdateChatLanguageUseCase } from '../application/update-chat-language.usecase';
 import type { SetupTokenGate } from '../domain/port/setup-token.port';
 import { SETUP_TOKEN_GATE } from '../domain/port/tokens';
 import type { AuthenticatedAccount } from '../guard/authenticated-account';
@@ -20,6 +33,7 @@ import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import { LoginRequest } from './dto/login.request';
 import { SetupRequest } from './dto/setup.request';
 import type { SetupStatusResponse } from './dto/setup-status.response';
+import { UpdateChatLanguageRequest } from './dto/update-chat-language.request';
 
 const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7d
 
@@ -38,6 +52,8 @@ export class AuthController {
   constructor(
     private readonly login: LoginUseCase,
     private readonly setupAdmin: SetupAdminUseCase,
+    private readonly myProfile: MyProfileQuery,
+    private readonly updateChatLanguage: UpdateChatLanguageUseCase,
     @Inject(SETUP_TOKEN_GATE) private readonly setupGate: SetupTokenGate,
   ) {}
 
@@ -83,7 +99,18 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@CurrentAccount() account?: AuthenticatedAccount): AuthenticatedAccount | undefined {
-    return account;
+  me(@CurrentAccount() account?: AuthenticatedAccount): Promise<AccountView> | undefined {
+    return account ? this.myProfile.execute(account.id) : undefined;
+  }
+
+  @Patch('me/chat-language')
+  @UseGuards(JwtAuthGuard)
+  setChatLanguage(
+    @Body() body: UpdateChatLanguageRequest,
+    @CurrentAccount() account?: AuthenticatedAccount,
+  ): Promise<AccountView> | undefined {
+    return account
+      ? this.updateChatLanguage.execute({ accountId: account.id, chatLanguage: body.chatLanguage })
+      : undefined;
   }
 }

@@ -6,6 +6,7 @@ import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 import type { AccountStatus } from '@/identity/domain/model/account-status';
 import type { Role } from '@/identity/domain/model/role';
 import { isoInstant } from '@/infrastructure/database/transformers';
+import type { Locale } from '@/shared/locale';
 
 @Entity('accounts')
 export class AccountEntity {
@@ -36,4 +37,7 @@ export class AccountEntity {
 
   @Column('timestamptz', { name: 'expires_at', nullable: true, transformer: isoInstant })
   expiresAt?: string;
+
+  @Column('varchar', { name: 'chat_language', nullable: true })
+  chatLanguage?: Locale;
 }

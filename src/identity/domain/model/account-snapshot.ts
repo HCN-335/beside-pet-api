@@ -1,6 +1,7 @@
 /**
  * account-snapshot.ts — flat persistence representation of an account aggregate.
  */
+import type { Locale } from '@/shared/locale';
 import type { AccountStatus } from './account-status';
 import type { Role } from './role';
 
@@ -14,4 +15,5 @@ export interface AccountSnapshot {
   createdAt: string;
   lastLoginAt?: string;
   expiresAt?: string;
+  chatLanguage?: Locale;
 }
