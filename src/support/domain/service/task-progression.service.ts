@@ -28,10 +28,10 @@ export const MAX_DEPTH = 5;
 /** Consecutive non-engaged answers that trigger a gentle early advance. */
 export const DISENGAGE_EXIT = 2;
 
-// Disengagement signals in both support languages ("I don't know" / a one-word reply).
-// Case-insensitive for the English side; the apostrophe is optional to catch "dont".
+// Disengagement signals ("I don't know" / a one-word reply). Case-insensitive;
+// the apostrophe is optional to catch "dont".
 const DUNNO_PATTERN =
-  /모르겠|기억.*안|말하기 (어|힘)|글쎄|모름|i don['’]?t know|dunno|don['’]?t remember|can['’]?t remember|not sure|no idea|hard to say/i;
+  /i don['’]?t know|dunno|don['’]?t remember|can['’]?t remember|not sure|no idea|hard to say/i;
 const MIN_MEANINGFUL_LENGTH = 8;
 
 @Injectable()

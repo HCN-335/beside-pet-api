@@ -35,18 +35,10 @@ export const REPORT_SECTION_ORDER: ReportSectionKey[] = [
   'encouragement',
 ];
 
-/** Fixed, localized card titles (bodies are written per session). */
-export const REPORT_SECTION_TITLES: Record<Locale, Record<ReportSectionKey, string>> = {
-  ko: {
-    journey: '함께 걸어온 길',
-    emotions: '마음에 담긴 감정',
-    keepsake: '기억하고 싶은 것',
-    encouragement: '다독임 한마디',
-  },
-  en: {
-    journey: 'The path you walked',
-    emotions: 'What your heart carried',
-    keepsake: 'A keepsake to hold',
-    encouragement: 'A word for you',
-  },
+/** Fixed card titles (bodies are written per session). */
+export const REPORT_SECTION_TITLES: Record<ReportSectionKey, string> = {
+  journey: 'The path you walked',
+  emotions: 'What your heart carried',
+  keepsake: 'A keepsake to hold',
+  encouragement: 'A word for you',
 };

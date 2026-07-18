@@ -88,7 +88,7 @@ export class SupportOrchestrator {
     session.raiseSupportLevel(level);
     if (isCrisis(level)) {
       const fromTask = session.task;
-      const reply = crisisReply(locale);
+      const reply = crisisReply();
       session.close();
       session.record('assistant', reply, this.time.now());
       this.recordTurn(session, crisisRecord(fromTask, level, reply));
@@ -151,7 +151,7 @@ export class SupportOrchestrator {
     session.raiseSupportLevel(level);
     if (isCrisis(level)) {
       const fromTask = session.task;
-      const reply = crisisReply(locale);
+      const reply = crisisReply();
       session.close();
       yield toMetaEvent(session);
       yield { kind: 'token', text: reply };

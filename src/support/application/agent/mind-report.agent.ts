@@ -39,7 +39,7 @@ export class MindReportAgent {
       history: session.history,
     };
     const bodies = await this.llm.composeReportBodies(context);
-    const titles = REPORT_SECTION_TITLES[locale];
+    const titles = REPORT_SECTION_TITLES;
     return {
       at: this.time.now(),
       petName: context.petName,

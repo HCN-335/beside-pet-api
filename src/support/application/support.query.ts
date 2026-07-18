@@ -32,7 +32,7 @@ export class SupportQuery {
       sessionId: session.id,
       closed: session.closed,
       reachedTask: session.task,
-      taskLabel: labelOf(session.task, preferredLanguageOf(session.griefProfile)),
+      taskLabel: labelOf(session.task),
       progress: progressOf(session.task),
       petName: session.griefProfile.petName,
       preferredLanguage: preferredLanguageOf(session.griefProfile),
@@ -53,7 +53,7 @@ export class SupportQuery {
     return {
       sessionId: session.id,
       task: session.task,
-      taskLabel: labelOf(session.task, preferredLanguageOf(session.griefProfile)),
+      taskLabel: labelOf(session.task),
       progress: progressOf(session.task),
       supportLevel: session.supportLevel,
       closed: session.closed,
