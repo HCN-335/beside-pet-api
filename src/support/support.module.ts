@@ -4,23 +4,24 @@
  */
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '@/identity/identity.module';
-import { MindReportAgent } from './application/mind-report.agent';
-import { PlannerAgent } from './application/planner.agent';
+import { LlmModule } from '@/llm/llm.module';
+import { MindReportAgent } from './application/agent/mind-report.agent';
+import { PlannerAgent } from './application/agent/planner.agent';
+import { SummarizerAgent } from './application/agent/summarizer.agent';
+import { SupervisorAgent } from './application/agent/supervisor.agent';
 import { SendMessageUseCase } from './application/send-message.usecase';
 import { StartSessionUseCase } from './application/start-session.usecase';
-import { SummarizerAgent } from './application/summarizer.agent';
-import { SupervisorAgent } from './application/supervisor.agent';
 import { SupportOrchestrator } from './application/support.orchestrator';
 import { SupportQuery } from './application/support.query';
 import { KNOWLEDGE_PORT, LLM_PORT } from './domain/port/tokens';
 import { SafetyCheckService } from './domain/service/safety-check.service';
 import { TaskProgressionService } from './domain/service/task-progression.service';
 import { RagKnowledgeAdapter } from './infrastructure/knowledge/rag.adapter';
-import { ClaudeAdapter } from './infrastructure/llm/claude.adapter';
+import { ReplyComposerAdapter } from './infrastructure/llm/reply-composer.adapter';
 import { SupportController } from './interface/support.controller';
 
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, LlmModule],
   controllers: [SupportController],
   providers: [
     // domain services
@@ -37,7 +38,7 @@ import { SupportController } from './interface/support.controller';
     SendMessageUseCase,
     SupportQuery,
     // port → adapter bindings (SESSION_REPOSITORY comes from the global PersistenceModule)
-    { provide: LLM_PORT, useClass: ClaudeAdapter },
+    { provide: LLM_PORT, useClass: ReplyComposerAdapter },
     { provide: KNOWLEDGE_PORT, useClass: RagKnowledgeAdapter },
   ],
   exports: [LLM_PORT],

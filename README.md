@@ -17,7 +17,7 @@ NestJS + DDD로 구축한 **펫로스 정서 지지 에이전트 API**.
 
 ## 에이전트 구성
 
-턴 흐름 밖에서 세 에이전트가 분석 레이어를 더한다. 모두 포트 뒤에 있어 stub(결정론)↔LLM 교체가 자유롭다.
+턴 흐름 밖에서 세 에이전트가 분석 레이어를 더한다. 모두 포트 뒤에 있어 모델·구현 교체가 자유롭다.
 
 | 역할 | 실행 시점 | 책임 |
 |------|-----------|------|
@@ -49,7 +49,7 @@ NestJS + DDD로 구축한 **펫로스 정서 지지 에이전트 API**.
 ## 모델 운용
 
 - **Claude Haiku**(`claude-haiku-4-5`) 단일 모델 — 공감 발화·판정·요약 모두. 빈도 높은 워크로드에 비용·지연 최적.
-- `ANTHROPIC_API_KEY`가 없으면 **결정론적 stub**으로 폴백 — 회귀 테스트가 무료·재현 가능하게 돈다.
+- `ANTHROPIC_API_KEY` **필수** — 없으면 부팅 시점에 명확한 에러로 종료된다 (라이브 전용).
 
 ## 영속화
 
@@ -59,7 +59,7 @@ NestJS + DDD로 구축한 **펫로스 정서 지지 에이전트 API**.
 
 ```bash
 pnpm install
-pnpm start:dev                # http://localhost:3000 — 인메모리 + stub 모드로 즉시 동작
+pnpm start:dev                # http://localhost:3000 — 인메모리로 동작 (.env.development에 ANTHROPIC_API_KEY 필요)
 # 부팅 로그의 setup 토큰으로 최초 관리자 생성 (POST /v1/auth/setup)
 
 docker compose up -d db       # (옵션) Postgres — .env에 DATABASE_URL 설정

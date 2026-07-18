@@ -1,7 +1,7 @@
 /**
  * persistence.module.ts — chooses the persistence adapters at startup.
  * If DATABASE_URL is set in the environment → TypeORM + Postgres repositories;
- * otherwise → in-memory (keeps the deterministic stub/regression path DB-free).
+ * otherwise → in-memory (keeps local development and regression runs DB-free).
  * Either way it binds the same ACCOUNT_REPOSITORY / SESSION_REPOSITORY tokens and
  * is global, so the bounded contexts inject the ports without knowing which is live.
  *

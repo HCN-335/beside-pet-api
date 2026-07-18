@@ -3,7 +3,7 @@
  * Distinct from the internal SessionSummary (analytical, for the company): this
  * is a warm, supportive reflection for the grieving user, in their language.
  * The structural fields are deterministic; the section bodies are LLM-written
- * (warm narrative), with a deterministic stub fallback.
+ * (warm narrative).
  */
 import type { Locale } from '@/shared/locale';
 import type { TaskId } from './grief-task';

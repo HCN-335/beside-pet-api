@@ -1,8 +1,8 @@
 /**
  * crisis-pattern.ts — single source of truth for the deterministic crisis keyword screen.
  * Being rule-based (not LLM) keeps regression runs reproducible, and keeping the pattern in
- * one place stops the domain fast-path (SafetyCheckService) and the stub fallback (ClaudeAdapter)
- * from drifting apart. Multilingual (ko + en) because the support conversation defaults to English.
+ * one place stops the domain fast-path (SafetyCheckService) and the model-failure fallback
+ * (ReplyComposerAdapter) from drifting apart. Multilingual (ko + en) because the support conversation defaults to English.
  * Detection only — the crisis reply itself stays fixed (see safety-resources.ts).
  */
 
