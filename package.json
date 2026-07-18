@@ -11,8 +11,7 @@
     "build": "nest build",
     "lint": "biome check --write src",
     "format": "biome format --write src",
-    "typecheck": "tsc --noEmit",
-    "ingest": "ts-node scripts/ingest-knowledge.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
