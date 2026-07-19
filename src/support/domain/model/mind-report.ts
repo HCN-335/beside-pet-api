@@ -10,6 +10,13 @@ import type { TaskId } from './grief-task';
 
 export type ReportSectionKey = 'journey' | 'emotions' | 'keepsake' | 'encouragement';
 
+/** A report needs at least one completed stage — below this there is too little to reflect on. */
+export const REPORT_MIN_TASK: TaskId = 2;
+
+/** Whether a session has enough of a journey (and is wrapped up) to carry a report. */
+export const isReportAvailable = (task: TaskId, closed: boolean): boolean =>
+  closed && task >= REPORT_MIN_TASK;
+
 /** One card of the report: a fixed title + an LLM-written warm body. */
 export interface MindReportSection {
   key: ReportSectionKey;

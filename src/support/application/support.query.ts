@@ -5,7 +5,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import { preferredLanguageOf } from '@/support/domain/model/grief-profile';
 import { labelOf, progressOf } from '@/support/domain/model/grief-task';
 import type { Message } from '@/support/domain/model/message';
-import type { MindReport } from '@/support/domain/model/mind-report';
+import { isReportAvailable, type MindReport } from '@/support/domain/model/mind-report';
 import type { Session } from '@/support/domain/model/session';
 import type { SessionRepository } from '@/support/domain/port/session.repository';
 import { SESSION_REPOSITORY } from '@/support/domain/port/tokens';
@@ -36,14 +36,15 @@ export class SupportQuery {
       progress: progressOf(session.task),
       petName: session.griefProfile.petName,
       preferredLanguage: preferredLanguageOf(session.griefProfile),
+      reportAvailable: isReportAvailable(session.task, session.closed),
     }));
   }
 
   /** User-facing mind report — generated lazily from the closed session. */
   async report(id: string, requester: Requester): Promise<MindReport> {
     const session = await this.require(id, requester);
-    if (!session.closed) {
-      throw new ConflictException('Session is not closed yet.');
+    if (!isReportAvailable(session.task, session.closed)) {
+      throw new ConflictException('The report is not available for this session yet.');
     }
     return this.mindReport.build(session);
   }
@@ -57,6 +58,7 @@ export class SupportQuery {
       progress: progressOf(session.task),
       supportLevel: session.supportLevel,
       closed: session.closed,
+      reportAvailable: isReportAvailable(session.task, session.closed),
     };
   }
 

@@ -14,6 +14,7 @@ import type { SessionAnalysisView } from '../application/dto/session-analysis-vi
 import type { SessionListItem } from '../application/dto/session-list-item';
 import type { SessionStateView } from '../application/dto/session-state-view';
 import type { TurnResult } from '../application/dto/turn-result';
+import { CloseSessionUseCase } from '../application/close-session.usecase';
 import type { Requester } from '../application/ownership';
 import { SendMessageUseCase } from '../application/send-message.usecase';
 import { StartSessionUseCase } from '../application/start-session.usecase';
@@ -35,6 +36,7 @@ export class SupportController {
   constructor(
     private readonly startSession: StartSessionUseCase,
     private readonly sendMessage: SendMessageUseCase,
+    private readonly closeSession: CloseSessionUseCase,
     private readonly query: SupportQuery,
   ) {}
 
@@ -92,6 +94,17 @@ export class SupportController {
       requester: requesterOf(account),
     });
     return pipeSse(res, events);
+  }
+
+  @Post(':id/close')
+  @HttpCode(200)
+  async close(
+    @Param('id') id: string,
+    @CurrentAccount() account: AuthenticatedAccount,
+  ): Promise<SessionStateView> {
+    const requester = requesterOf(account);
+    await this.closeSession.execute({ sessionId: id, requester });
+    return this.query.state(id, requester);
   }
 
   @Get()

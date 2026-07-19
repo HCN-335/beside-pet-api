@@ -8,4 +8,6 @@ export interface SessionStateView {
   progress: number;
   supportLevel: number;
   closed: boolean;
+  /** Whether the mind report can be viewed (wrapped up with enough progress). */
+  reportAvailable: boolean;
 }

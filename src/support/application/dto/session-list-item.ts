@@ -12,4 +12,6 @@ export interface SessionListItem {
   petName?: string;
   /** The session's conversation language — used to restore the returning user's UI locale. */
   preferredLanguage: Locale;
+  /** Whether the mind report can be viewed (wrapped up with enough progress). */
+  reportAvailable: boolean;
 }
