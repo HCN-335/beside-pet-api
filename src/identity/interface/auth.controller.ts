@@ -2,6 +2,7 @@
  * auth.controller.ts — first-run setup, login/logout, my info.
  *  GET  /v1/auth/setup   is first-run setup still pending?
  *  POST /v1/auth/setup   one-time token → first admin account (+ signed in)
+ *  POST  /v1/auth/register          public account application (→ pending, admin approval required)
  *  POST  /v1/auth/login             username + password → JWT (httpOnly cookie)
  *  POST  /v1/auth/logout            expire the cookie
  *  GET   /v1/auth/me                current account incl. settings (guard required)
@@ -22,6 +23,7 @@ import type { Response } from 'express';
 import type { AccountView } from '../application/dto/account-view';
 import { LoginUseCase } from '../application/login.usecase';
 import { MyProfileQuery } from '../application/my-profile.query';
+import { RegisterAccountUseCase } from '../application/register-account.usecase';
 import { SetupAdminUseCase } from '../application/setup-admin.usecase';
 import { UpdateChatLanguageUseCase } from '../application/update-chat-language.usecase';
 import type { SetupTokenGate } from '../domain/port/setup-token.port';
@@ -31,6 +33,7 @@ import { AUTH_COOKIE } from '../guard/cookie';
 import { CurrentAccount } from '../guard/current-account.decorator';
 import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import { LoginRequest } from './dto/login.request';
+import { RegisterRequest } from './dto/register.request';
 import { SetupRequest } from './dto/setup.request';
 import type { SetupStatusResponse } from './dto/setup-status.response';
 import { UpdateChatLanguageRequest } from './dto/update-chat-language.request';
@@ -52,10 +55,21 @@ export class AuthController {
   constructor(
     private readonly login: LoginUseCase,
     private readonly setupAdmin: SetupAdminUseCase,
+    private readonly registerAccount: RegisterAccountUseCase,
     private readonly myProfile: MyProfileQuery,
     private readonly updateChatLanguage: UpdateChatLanguageUseCase,
     @Inject(SETUP_TOKEN_GATE) private readonly setupGate: SetupTokenGate,
   ) {}
+
+  @Post('register')
+  @HttpCode(201)
+  register(@Body() body: RegisterRequest): Promise<AccountView> {
+    return this.registerAccount.execute({
+      username: body.username,
+      password: body.password,
+      company: body.company,
+    });
+  }
 
   @Get('setup')
   setupStatus(): SetupStatusResponse {

@@ -2,8 +2,8 @@
  * login.usecase.ts — username + password login → JWT issuance.
  * Revoked, deleted, and expired accounts are rejected. Returns the token; the controller sets the cookie.
  */
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { isActive } from '@/identity/domain/model/account-status';
+import { ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { isActive, isPending } from '@/identity/domain/model/account-status';
 import type { AccountRepository } from '@/identity/domain/port/account.repository';
 import type { PasswordHasher } from '@/identity/domain/port/password-hasher.port';
 import type { TokenSigner } from '@/identity/domain/port/token-signer.port';
@@ -28,6 +28,9 @@ export class LoginUseCase {
     // Reject with the same message so we don't reveal whether the username exists.
     if (!account || !ok) {
       throw new UnauthorizedException('Invalid username or password');
+    }
+    if (isPending(account.status)) {
+      throw new ForbiddenException('Your account is awaiting approval.');
     }
     if (account.status === 'revoked') {
       throw new UnauthorizedException('Account is revoked');

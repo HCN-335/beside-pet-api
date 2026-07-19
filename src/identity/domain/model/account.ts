@@ -5,6 +5,7 @@
  */
 import { DateTime } from 'luxon';
 import type { Locale } from '@/shared/locale';
+import type { AccountApplicationInput } from './account-application-input';
 import type { AccountIssueInput } from './account-issue-input';
 import type { AccountSnapshot } from './account-snapshot';
 import type { AccountStatus } from './account-status';
@@ -36,6 +37,22 @@ export class Account {
       input.createdAt,
       undefined,
       input.expiresAt,
+      undefined,
+    );
+  }
+
+  /** A visitor applies for an account — starts pending until an admin approves. */
+  static applyFor(input: AccountApplicationInput): Account {
+    return new Account(
+      input.id,
+      input.username,
+      input.passwordHash,
+      input.company,
+      'viewer',
+      'pending',
+      input.createdAt,
+      undefined,
+      undefined,
       undefined,
     );
   }
@@ -89,6 +106,11 @@ export class Account {
   }
 
   reactivate(): void {
+    this._status = 'active';
+  }
+
+  /** Admin approves a pending application (→ active). */
+  approve(): void {
     this._status = 'active';
   }
 

@@ -4,7 +4,9 @@
  */
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ApproveAccountUseCase } from './application/approve-account.usecase';
 import { CreateAccountUseCase } from './application/create-account.usecase';
+import { RegisterAccountUseCase } from './application/register-account.usecase';
 import { DeleteAccountUseCase } from './application/delete-account.usecase';
 import { ListAccountsQuery } from './application/list-accounts.query';
 import { LoginUseCase } from './application/login.usecase';
@@ -31,6 +33,8 @@ import { AuthController } from './interface/auth.controller';
     { provide: PASSWORD_HASHER, useClass: BcryptPasswordHasher },
     { provide: TOKEN_SIGNER, useClass: JwtTokenSigner },
     CreateAccountUseCase,
+    ApproveAccountUseCase,
+    RegisterAccountUseCase,
     LoginUseCase,
     RevokeAccountUseCase,
     SoftDeleteAccountUseCase,

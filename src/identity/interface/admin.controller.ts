@@ -2,6 +2,7 @@
  * admin.controller.ts — issue, list, and manage accounts (admin only).
  *  POST   /v1/admin/accounts                  issue an account (username, password, company, role?, expiresAt?)
  *  GET    /v1/admin/accounts                  list accounts (all, incl. deleted)
+ *  POST   /v1/admin/accounts/:id/approve      approve a pending application (→ active)
  *  POST   /v1/admin/accounts/:id/revoke       revoke an account (→ revoked; data preserved)
  *  POST   /v1/admin/accounts/:id/soft-delete  soft-delete an account (→ deleted; data preserved)
  *  POST   /v1/admin/accounts/:id/reactivate   reactivate an account (→ active)
@@ -19,6 +20,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApproveAccountUseCase } from '../application/approve-account.usecase';
 import { CreateAccountUseCase } from '../application/create-account.usecase';
 import { DeleteAccountUseCase } from '../application/delete-account.usecase';
 import type { AccountView } from '../application/dto/account-view';
@@ -39,6 +41,7 @@ import { SetExpiryRequest } from './dto/set-expiry.request';
 export class AdminController {
   constructor(
     private readonly createAccount: CreateAccountUseCase,
+    private readonly approveAccount: ApproveAccountUseCase,
     private readonly listAccounts: ListAccountsQuery,
     private readonly revokeAccount: RevokeAccountUseCase,
     private readonly softDeleteAccount: SoftDeleteAccountUseCase,
@@ -62,6 +65,12 @@ export class AdminController {
   @Get('accounts')
   list(): Promise<AccountView[]> {
     return this.listAccounts.execute();
+  }
+
+  @Post('accounts/:id/approve')
+  @HttpCode(200)
+  approve(@Param('id') id: string): Promise<AccountView> {
+    return this.approveAccount.execute(id);
   }
 
   @Post('accounts/:id/revoke')
