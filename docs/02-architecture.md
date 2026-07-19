@@ -1,91 +1,76 @@
 # 02 · 시스템 아키텍처 (전체)
 
-> 프론트 ↔ 백엔드 ↔ 데이터까지 한눈에. 세부는 [backend/ARCHITECTURE.md](backend/ARCHITECTURE.md) · [frontend/ARCHITECTURE.md](frontend/ARCHITECTURE.md).
+> 프론트 ↔ 백엔드 ↔ 데이터까지 한눈에. 백엔드 내부 설계는 [ARCHITECTURE.md](ARCHITECTURE.md), 제품 맥락은 [01-product-overview.md](01-product-overview.md).
 
 ---
 
 ## 1. 한 장 그림
 
-```
- [ Next.js 프론트 ]                  [ NestJS 백엔드 ]                    [ 데이터 ]
-                                                                          
- 채팅 UI · 진행도 표시   ──REST──▶   SessionController                    
- (API 키 없음)          POST /sessions          │                        
-                        POST /sessions/:id/messages                      
-                                          │                              
-                                          ▼                              
-                                   LangGraph 상태 그래프 ───┬──▶ Claude API (키는 서버 전용)
-                                   (흐름 통제)              │
-                                   supervisor·counselor    ├──▶ pgvector (RAG 검색)
-                                   grader·safety            │
-                                          │                 └──▶ Langfuse (트레이싱·관측)
-                                          ▼                              
-                                   GraphState (단일 상태) ──────▶ PostgreSQL
-                                                              (checkpointer + JSONB + vector)
-```
+![시스템 아키텍처 — 프론트 · 백엔드 · 데이터](architecture.svg)
 
 핵심 분업:
+
 - **프론트**는 화면·입력·진행도 표시만. **API 키를 절대 갖지 않는다.**
 - **백엔드**가 흐름·발화·판정·안전·검색을 모두 책임진다.
-- **LangGraph가 "다음에 무엇을 할지"를 통제**하고, Claude는 노드 안에서 발화만 한다 — 흐름 제어는 모델이 아니라 코드의 책임.
+- **오케스트레이터가 "다음에 무엇을 할지"를 코드로 통제**하고, 모델은 각 단계 안에서 발화만 한다 — 흐름 제어는 모델이 아니라 코드의 책임.
 
-## 2. 프론트 ↔ 백엔드 계약 (REST)
+## 2. 프론트 ↔ 백엔드 계약 (REST + SSE)
 
-프론트는 **단 두 개의 엔드포인트**만 호출한다 (`backend/src/session/session.controller.ts`).
+전체 스키마는 서버가 상시 노출하는 **OpenAPI 문서(`/docs`)** 가 단일 진실이다. 요약:
 
-| 메서드 | 경로 | 용도 | 요청 | 응답(개념) |
-|--------|------|------|------|-----------|
-| POST | `/sessions` | 새 세션 시작 | `{ sessionId, griefPath, seed? }` | 초기 발화 + 진행 상태 |
-| POST | `/sessions/:id/messages` | 사용자 턴 전송 | `{ text }` | 봇 발화 + 갱신된 진행 상태 |
+| 영역 | 표면 | 비고 |
+|------|------|------|
+| Auth | `setup` · `register` · `login` · `logout` · `me` · `me/chat-language` | 최초 관리자는 1회용 부팅 토큰, 가입은 승인제 |
+| Support | `POST /v1/sessions`(+`/stream`) · `/:id/messages`(+`/stream`) · `/:id/close` | 스트리밍은 SSE: `meta → token → done` |
+| Support 조회 | `GET /v1/sessions` · `/:id` · `/:id/messages` · `/:id/report` | 마음 리포트는 종료 + 최소 진행 게이트 |
+| Admin | `/v1/admin/accounts…` | 발급·신청 승인·정지·만료 |
+| Safety | `GET /v1/safety/resources` | 위기 지원 자원 — 항상 무료 |
 
-> 프론트는 상담 로직을 전혀 모른다. "텍스트를 보내면 발화와 진행도가 돌아온다"만 안다. 흐름·상태·모델은 전부 서버 뒤에 있다.
+> 프론트는 상담 로직을 전혀 모른다. "텍스트를 보내면 발화와 진행 구조(`TurnResult`)가 돌아온다"만 안다.
 
-## 3. 단일 상태 (Single Source of Truth)
+## 3. 단일 상태 — Session 애그리게이트
 
-모든 노드가 하나의 `GraphState`를 읽고 쓴다 (`backend/src/state/graph-state.ts`). 이 상태 하나가 **무한루프 방지·진행도 정량화·세션 이어받기**를 전부 떠받친다.
+턴의 구조적 결정은 전부 `Session` 애그리게이트의 결정론적 상태에서 나온다. 이 상태 하나가 **맴돌이 방지·진행도 정량화·세션 이어받기**를 떠받친다.
 
 | 필드 | 역할 | 어떤 벽을 해결하나 |
 |------|------|--------------------|
-| `currentTask` / `taskCompletion` | Worden 4과제 진행 | 진행도 측정 불가 |
-| `askedQuestions` | 이미 한 질문 기록 → 재질문 금지 | 같은 질문 반복 |
-| `retryCount` (+ `MAX_RETRY=2`) | 재시도 한도 → 폴백 전이 | 무한루프 |
-| `mode` (`loss`↔`restoration`) | 이중과정모델 모드 전환 | 슬픔 맴돌이 |
-| `riskTier` | 위기 등급 (3=전문 연계) | 안전 |
-| `memory` | 세션 간 기억 (지속적 유대) | 세션 리셋 |
-
-진행률은 단순 계산으로 떨어진다: `overallProgress = 완료 과제(≥0.6) 수 / 4`.
+| `task` (0~5) | Worden 4과제 진행 위치 → `progress` 정량화 | 진행도 측정 불가 |
+| 깊이 게이트 (전사 파생) | 단계당 최소 3턴 머묾 · 비몰입 2연속이면 부드러운 조기 전이 · 상한 5턴 | 같은 자리 맴돌이 / 문진표식 강요 |
+| `retryCount` | 재질문 각도 조절 | 같은 질문 반복 |
+| `supportLevel` (1~3) | 안전 등급 — 3이면 대화 중단·전문 연계 | 안전 |
+| `closed` | 종료된 대화는 턴 거부 (도메인 불변식) | 종료 후 오사용 |
+| `griefProfile` · `history` | 프로필·전사 — 재개 세션의 연속성 재료 | 세션 리셋 |
+| `plan` · `summary` | Planner 지지 계획 · Summarizer 종료 요약 | 세션 간 기억 |
 
 ## 4. 데이터 저장 전략
 
-| 데이터 | 저장소 | 이유 |
-|--------|--------|------|
-| 그래프 상태 | PostgreSQL (checkpointer 직렬화) | 세션 간 이어받기 |
-| 채팅 본문 | PostgreSQL **JSONB** | raw 보존, 스키마 유연 |
-| 임베딩 | **pgvector** | RAG 검색 |
-| 미디어(음성/이미지) | S3 (DB엔 참조만) | 용량·비용 ※ 향후 |
+자주 조회·집계하는 값은 **컬럼**, 문서성 데이터는 **JSONB** — Postgres 한 시스템으로 관계형 + 문서를 커버한다.
 
-> NoSQL을 따로 두지 않고 **Postgres 한 시스템**으로 관계형 + 문서(JSONB) + 벡터(pgvector)를 커버 — 초기 규모에 최적. `raw → 가공(ETL) → 인사이트` 레이어를 분리하고, 인사이트는 동의·비식별·집계를 전제로 한다.
+| 테이블 | 형태 | 이유 |
+|--------|------|------|
+| `accounts` | 정규화 컬럼 | 인증·상태 전이가 트랜잭션 대상 |
+| `sessions` | 스칼라(진행 상태) + JSONB(profile·history·plan·summary) | 대화록은 raw 보존, 진행은 조회 가능 |
+| `turn_analyses` | 턴별 분석을 **집계 컬럼으로 승격** (+ risk·task 인덱스) | 위기율·도달률 인사이트가 SQL 한 줄 |
+
+`DATABASE_URL`은 **필수** — 상담 기록이 제품의 실체이므로, 데이터베이스 없이 조용히 동작하는 대신 부팅 시점에 명확히 실패한다. 마이그레이션은 접속 시 자동 적용된다.
 
 ## 5. 모델 운용
 
-| 용도 | 모델 | 이유 |
-|------|------|------|
-| 공감 발화 (Counselor) | Claude **Sonnet** | 공감 품질 |
-| 판정·요약 (Grader, Summarizer) | Claude **Haiku** | 저렴·고빈도 |
+- **Claude Haiku 단일 모델** — 공감 발화·위기 판정·마음 리포트 전부. 빈도 높은 워크로드에 비용·지연 최적.
+- **라이브 전용** — `ANTHROPIC_API_KEY` 없이는 부팅하지 않는다. 발화 생성의 모델 실패는 에러로 전파하고, 위기 판정만 키워드 스크린 폴백을 둔다(안전은 열화보다 보수적으로).
+- 모든 호출은 `TextModelPort` 관문 하나를 지나고, 요청마다 `ModelRef`(프로바이더·모델)를 실어 보내므로 역할별 모델 교체·부분 승격이 코드 변경 없이 가능하다. 호출별 토큰·비용은 `UsageSink`가 기록한다.
 
-> 모델 선택은 **흐름 구조가 정해진 뒤**의 비용/품질 최적화 문제로만 다룬다. 흐름 제어를 상태 그래프가 책임지므로, 발화 모델은 역할별로 교체·최적화할 수 있다.
+## 6. 관측·평가 (로드맵)
 
-## 6. 관측·평가
+모든 모델 호출이 관문 하나를 지나므로, 관측은 라우터 데코레이터 1개로 추가된다 — **Langfuse** 트레이싱·비용 기록과 Supervisor의 judge 스코어(언어 일치·형식·안전) 연동을 [README 로드맵](../README.md#로드맵) Phase 2로 계획하고 있다.
 
-- **Langfuse** — 트레이싱으로 "어떤 노드가 어떤 근거로 무엇을 발화했는지" 가시화 → 답변 품질을 관측 가능하게.
-- **RAGAS** — RAG 답변의 근거 충실도 평가 → 프롬프트/검색 변경의 개선 루프를 닫는다.
+## 7. 인프라
 
-## 7. 인프라 / 배포
+- **로컬**: `docker compose up -d db`(Postgres) + 앱은 호스트(`pnpm start:dev`).
+- **배포**: App Runner → ECS Fargate 승격 경로와 시크릿·CI 구성은 [README 로드맵](../README.md#로드맵)의 인프라 절 참조.
 
-- **로컬**: `docker compose up`(Postgres+pgvector) + 앱은 호스트(`npm run start:dev`).
-- **배포(필요 시)**: 단일 컨테이너 → Railway/Fly.io/AWS. 1차 슬라이스 단계에선 로컬 데모로 충분.
-- **보안**: API 키 서버사이드 전용, `.env` 비커밋, 위기 자원은 항상 무료.
+## 8. 보안
 
-## 8. 의도적으로 제외한 것
-
-로그인 · 결제 · 모바일 · 프로덕션 배포 인프라. **핵심 한 줄기(무한루프 방지)가 진짜로 도는 것**에 집중하기 위한 선택. (→ [01-product-overview.md](01-product-overview.md) §6 스코프)
+- Claude API 키는 서버사이드 전용, `.env` 비커밋.
+- 인증은 JWT **httpOnly 쿠키** — 토큰이 JS에 노출되지 않는다. 최초 관리자 자격증명은 파일 어디에도 남지 않는다(1회용 부팅 토큰).
+- 위기 자원 안내는 **항상 무료·항상 노출.**

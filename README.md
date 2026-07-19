@@ -3,6 +3,10 @@
 NestJS + DDD로 구축한 **펫로스 정서 지지 에이전트 API**.
 검증된 애도 여정 이론을 명시적 도메인 상태로 모델링하고, 대화의 흐름은 코드(오케스트레이터)가 통제하며 LLM은 각 단계 안에서 발화만 한다.
 
+> 더 깊이: [제품 개요](docs/01-product-overview.md) · [시스템 아키텍처](docs/02-architecture.md) · [백엔드 내부 설계](docs/ARCHITECTURE.md) · 실행 중 API 스키마는 `/docs`(OpenAPI)
+
+![시스템 아키텍처 — 프론트 · 백엔드 · 데이터](docs/architecture.svg)
+
 ---
 
 ## 설계 원칙
@@ -40,10 +44,10 @@ NestJS + DDD로 구축한 **펫로스 정서 지지 에이전트 API**.
 
 | 영역 | 경로 | 용도 |
 |------|------|------|
-| Auth | `POST /v1/auth/setup` · `login` · `logout` · `GET me` | 최초 관리자 설정(1회용 부팅 토큰) · JWT httpOnly 쿠키 로그인 |
-| Admin | `/v1/admin/accounts…` | 계정 발급·회수·만료 (공개 가입 없음 — 관리자가 발급) |
-| Support | `POST /v1/sessions` · `/:id/messages` (+ `/stream` SSE) | 세션 시작·사용자 턴 · 실시간 스트리밍 |
-| Support | `GET /v1/sessions/:id/analysis` · `report` | 턴 분석 · 마음 리포트 |
+| Auth | `POST /v1/auth/setup` · `register` · `login` · `logout` · `GET me` | 최초 관리자 설정(1회용 부팅 토큰) · 계정 신청(승인제) · JWT httpOnly 쿠키 로그인 |
+| Admin | `/v1/admin/accounts…` | 계정 발급·신청 승인·회수·만료 |
+| Support | `POST /v1/sessions` · `/:id/messages` (+ `/stream` SSE) · `/:id/close` | 세션 시작·사용자 턴·종료 · 실시간 스트리밍 |
+| Support | `GET /v1/sessions` · `/:id` · `/:id/messages` · `analysis` · `report` | 세션 목록·상태·전사 · 턴 분석 · 마음 리포트 |
 | Safety | `GET /v1/safety/resources` | 위기 지원 자원 |
 
 ## 모델 운용
@@ -53,18 +57,70 @@ NestJS + DDD로 구축한 **펫로스 정서 지지 에이전트 API**.
 
 ## 영속화
 
-`DATABASE_URL` 유무로 스위칭: 없으면 인메모리(빠른 로컬 개발), 있으면 TypeORM + Postgres. 저장소는 포트 뒤라 도메인은 차이를 모른다. 최초 관리자 계정은 env가 아니라 **부팅 로그의 1회용 setup 토큰**으로 생성한다 — 자격증명이 파일 어디에도 남지 않는다.
+**TypeORM + Postgres 필수** — 상담 기록이 제품의 실체이므로 `DATABASE_URL` 없이는 부팅하지 않는다(조용한 열화 대신 명확한 실패). 마이그레이션은 접속 시 자동 적용되고, 저장소는 포트 뒤라 도메인은 어댑터를 모른다. 최초 관리자 계정은 env가 아니라 **부팅 로그의 1회용 setup 토큰**으로 생성한다 — 자격증명이 파일 어디에도 남지 않는다.
 
 ## 빠른 시작
 
 ```bash
 pnpm install
-pnpm start:dev                # http://localhost:3000 — 인메모리로 동작 (.env.development에 ANTHROPIC_API_KEY 필요)
+docker compose up -d db       # Postgres (필수)
+pnpm start:dev                # http://localhost:3000 — .env.development에 ANTHROPIC_API_KEY·DATABASE_URL 필요
 # 부팅 로그의 setup 토큰으로 최초 관리자 생성 (POST /v1/auth/setup)
-
-docker compose up -d db       # (옵션) Postgres — .env에 DATABASE_URL 설정
 ```
+
+## 로드맵
+
+### Phase 1 — 코어 상담 루프 (현재, 마무리 단계)
+
+완료:
+
+- [x] 명시적 오케스트레이터 턴 파이프라인 — 안전 → 단계 전이 → 지식 검색 → 발화 → 분석 → 영속화
+- [x] 결정론적 깊이 게이트 단계 전이 + 진행도 정량화
+- [x] 위기 이중 스크린 (키워드 fast-path ∪ 모델 판정, 언어 무관) + 고정 안내 핸드오프
+- [x] SSE 스트리밍 (meta → token → done)
+- [x] 세션 연속성 — 프로필 상속·단계 재개, 직전 세션 요약·전사 꼬리를 재개 인사에 주입
+- [x] 마음 리포트 (종료 + 최소 진행 게이트) · 사용자 주도 세션 종료
+- [x] 분석 레이어 (Planner / Supervisor / Summarizer) + SQL 집계 가능한 turn_analyses 스키마
+- [x] 인증·계정 — JWT httpOnly 쿠키 · 1회용 setup 토큰 · admin 관리 · 계정 신청→승인 · 만료
+- [x] 계정 단위 대화 언어 — 정적 표면은 영어 단일본, 응답은 모델이 대화 언어로 생성
+- [x] Postgres 영속화 (TypeORM · 자동 마이그레이션 · `DATABASE_URL` 필수) + Docker
+
+- [x] OpenAPI 문서 (`/docs`, @nestjs/swagger + CLI 플러그인)
+- [x] closed 세션 거부의 도메인 레벨 이동
+- [x] docs/ 아키텍처 문서 정합화
+
+### Phase 2 — 운영·관측·인사이트
+
+관측/품질:
+
+- Langfuse 연동 — 모든 LLM 호출이 `TextModelPort` 관문 하나를 지나므로 라우터 데코레이터 1개로 트레이스·토큰·비용 기록
+- Supervisor의 LLM-judge 승격 — 언어 일치·형식·안전(자해 방조 등) 스코어를 turn_analyses와 Langfuse 양쪽에 기록, 문제 사례를 데이터셋으로 모아 프롬프트 회귀 평가
+- 위기 판정에 직전 대화 컨텍스트 윈도 반영 (판정 정확도 ↑, 사람 열람과는 무관)
+
+admin 운영:
+
+- 위기 세션 모니터링 + break-glass 열람 (평시 전사 열람 차단, 예외 열람은 감사 로그)
+- 고객사(테넌트)별 이용·완주율·위기율 인사이트 — turn_analyses 인덱스 기반 SQL 집계
+- Supervisor 플래그 검토 큐
+
+플랫폼:
+
+- Redis — 레이트리밋(공개 register 포함) · JWT denylist · 백그라운드 큐(BullMQ)
+- 프롬프트 캐싱 · Planner/Summarizer의 LLM 승격
+- 데이터 보존 정책 · 삭제 요청(잊혀질 권리) 처리
+
+인프라 (배포):
+
+- 1차: ECR 이미지 → **App Runner** + 관리형 Postgres(RDS/Supabase, SSL) — 시크릿은 Secrets Manager/SSM, 로그는 CloudWatch
+- 승격: ALB + **ECS Fargate** + CDK, GitHub Actions CI (빌드 → ECR → 배포)
+- Langfuse self-host — 단일 노드 compose로 시작, 트래픽에 따라 Helm 승격 (관측 데이터는 서비스 가용성과 분리)
+- 프론트 호스팅: Vercel/Amplify — API base는 env 주입
+
+### Phase 3 — AI 주도 검증 자동화 (구상)
+
+- 에이전트가 시나리오를 생성·실행·판정하는 회귀·품질 검증 — 고정된 테스트 코드 대신, 전 표면을 주기적으로 주행하는 자동화
+- Langfuse 데이터셋과 연결해 실사용 사례 기반의 평가 루프로 확장
 
 ## 스택
 
-NestJS · TypeScript(strict) · Claude(Haiku) · TypeORM + Postgres(옵션) · SSE · Biome · pnpm · Docker
+NestJS · TypeScript(strict) · Claude(Haiku) · TypeORM + Postgres · SSE · OpenAPI(`/docs`) · Biome · pnpm · Docker
