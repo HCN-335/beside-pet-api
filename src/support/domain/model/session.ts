@@ -9,6 +9,7 @@ import type { Locale } from '@/shared/locale';
 import type { GriefProfile } from './grief-profile';
 import { FIRST_TASK, type TaskId } from './grief-task';
 import { createMessage, type Message, type Role } from './message';
+import { SessionClosedError } from './session-closed.error';
 import type { SessionSnapshot } from './session-snapshot';
 import type { SessionSummary } from './session-summary';
 import { SUPPORT_SAFE, type SupportLevel } from './support-level';
@@ -139,6 +140,13 @@ export class Session {
   raiseSupportLevel(level: SupportLevel): void {
     if (level > this._supportLevel) {
       this._supportLevel = level;
+    }
+  }
+
+  /** Domain invariant: a closed session accepts no further user turns. */
+  assertOpen(): void {
+    if (this._closed) {
+      throw new SessionClosedError(this.id);
     }
   }
 

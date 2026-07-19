@@ -6,6 +6,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { AccountRepository } from '@/identity/domain/port/account.repository';
 import { ACCOUNT_REPOSITORY } from '@/identity/domain/port/tokens';
 import type { Session } from '@/support/domain/model/session';
+import { SessionClosedError } from '@/support/domain/model/session-closed.error';
 import type { SessionRepository } from '@/support/domain/port/session.repository';
 import { SESSION_REPOSITORY } from '@/support/domain/port/tokens';
 import type { TurnEvent } from './dto/turn-event';
@@ -35,10 +36,10 @@ export class SendMessageUseCase {
 
   /**
    * Restores the session and asserts it can still take a turn: it must exist, be
-   * owned by the requester, and not be closed (a closed session is a safety hand-off
-   * or a finished conversation, so further turns are rejected). The owner's
-   * account-level conversation language is adopted here, so a settings change
-   * takes effect from the very next turn.
+   * owned by the requester, and be open — the "no turns after close" rule is the
+   * Session aggregate's own invariant (assertOpen), translated to HTTP here.
+   * The owner's account-level conversation language is adopted here, so a
+   * settings change takes effect from the very next turn.
    */
   private async loadWritableSession(command: SendMessageCommand): Promise<Session> {
     const session = await this.sessions.findById(command.sessionId);
@@ -46,8 +47,13 @@ export class SendMessageUseCase {
       throw new NotFoundException(`Session not found: ${command.sessionId}`);
     }
     assertOwner(session.ownerId, command.requester);
-    if (session.closed) {
-      throw new ConflictException('Session is already closed.');
+    try {
+      session.assertOpen();
+    } catch (error) {
+      if (error instanceof SessionClosedError) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
     }
     const owner = await this.accounts.findById(session.ownerId);
     if (owner?.chatLanguage) {
