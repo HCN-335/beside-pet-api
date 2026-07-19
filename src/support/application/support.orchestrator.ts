@@ -29,7 +29,7 @@ import type { TurnAnalysis } from '@/support/domain/model/turn-analysis';
 import type { KnowledgePort } from '@/support/domain/port/knowledge.port';
 import type { KnowledgeChunk } from '@/support/domain/port/knowledge-chunk';
 import type { LlmPort } from '@/support/domain/port/llm.port';
-import type { ReplyContext } from '@/support/domain/port/reply-context';
+import type { PreviousSessionContext, ReplyContext } from '@/support/domain/port/reply-context';
 import type { SessionRepository } from '@/support/domain/port/session.repository';
 import { KNOWLEDGE_PORT, LLM_PORT, SESSION_REPOSITORY } from '@/support/domain/port/tokens';
 import { SafetyCheckService } from '@/support/domain/service/safety-check.service';
@@ -68,11 +68,22 @@ export class SupportOrchestrator {
   ) {}
 
   /** First greeting turn (immediately after the session starts). */
-  async greet(session: Session, resuming = false): Promise<TurnResult> {
+  async greet(
+    session: Session,
+    resuming = false,
+    previous?: PreviousSessionContext,
+  ): Promise<TurnResult> {
     const locale = preferredLanguageOf(session.griefProfile);
     this.ensurePlan(session);
     const knowledge = await this.knowledgeFor(session.task);
-    const reply = await this.compose(session, resuming ? 'resume' : 'intro', locale, knowledge);
+    const reply = await this.compose(
+      session,
+      resuming ? 'resume' : 'intro',
+      locale,
+      knowledge,
+      undefined,
+      previous,
+    );
     session.record('assistant', reply, this.time.now());
     await this.sessions.save(session);
     return toTurnResult(session, reply);
@@ -129,13 +140,24 @@ export class SupportOrchestrator {
   }
 
   /** Streaming greeting turn — same flow as greet(), emitted as SSE events. */
-  async *greetStream(session: Session, resuming = false): AsyncIterable<TurnEvent> {
+  async *greetStream(
+    session: Session,
+    resuming = false,
+    previous?: PreviousSessionContext,
+  ): AsyncIterable<TurnEvent> {
     const locale = preferredLanguageOf(session.griefProfile);
     this.ensurePlan(session);
     const knowledge = await this.knowledgeFor(session.task);
     yield toMetaEvent(session);
     const phase: ReplyPhaseName = resuming ? 'resume' : 'intro';
-    const reply = yield* this.streamReplyTokens(session, phase, locale, knowledge);
+    const reply = yield* this.streamReplyTokens(
+      session,
+      phase,
+      locale,
+      knowledge,
+      undefined,
+      previous,
+    );
     session.record('assistant', reply, this.time.now());
     await this.sessions.save(session);
     yield toDoneEvent(session, reply);
@@ -195,6 +217,19 @@ export class SupportOrchestrator {
   }
 
   /**
+   * User-initiated close (ending the conversation, e.g. to start a fresh one).
+   * Builds the closing summary so the mind report becomes available. Idempotent.
+   */
+  async closeByUser(session: Session): Promise<void> {
+    if (session.closed) {
+      return;
+    }
+    session.close();
+    this.summarize(session);
+    await this.sessions.save(session);
+  }
+
+  /**
    * Screens one user message for crisis risk. The deterministic keyword check is
    * a fast path; when it doesn't flag, the LLM does a language-agnostic
    * assessment so non-Korean crisis signals are still caught.
@@ -232,8 +267,9 @@ export class SupportOrchestrator {
     locale: Locale,
     knowledge: KnowledgeChunk[],
     userText?: string,
+    previous?: PreviousSessionContext,
   ): AsyncGenerator<TurnEvent, string> {
-    const context = this.replyContext(session, phase, locale, knowledge, userText);
+    const context = this.replyContext(session, phase, locale, knowledge, userText, previous);
     let reply = '';
     for await (const token of this.llm.streamReply(context)) {
       reply += token;
@@ -248,8 +284,11 @@ export class SupportOrchestrator {
     locale: Locale,
     knowledge: KnowledgeChunk[],
     userText?: string,
+    previous?: PreviousSessionContext,
   ): Promise<string> {
-    return this.llm.composeReply(this.replyContext(session, phase, locale, knowledge, userText));
+    return this.llm.composeReply(
+      this.replyContext(session, phase, locale, knowledge, userText, previous),
+    );
   }
 
   private replyContext(
@@ -258,6 +297,7 @@ export class SupportOrchestrator {
     locale: Locale,
     knowledge: KnowledgeChunk[],
     userText?: string,
+    previous?: PreviousSessionContext,
   ): ReplyContext {
     return {
       phase,
@@ -267,6 +307,7 @@ export class SupportOrchestrator {
       knowledge,
       history: session.history,
       userText,
+      previous,
     };
   }
 

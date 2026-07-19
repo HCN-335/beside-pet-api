@@ -10,6 +10,7 @@ import type { AccountRepository } from '@/identity/domain/port/account.repositor
 import { ACCOUNT_REPOSITORY } from '@/identity/domain/port/tokens';
 import { FIRST_TASK, isClosingTask, type TaskId } from '@/support/domain/model/grief-task';
 import { Session } from '@/support/domain/model/session';
+import type { PreviousSessionContext } from '@/support/domain/port/reply-context';
 import type { SessionRepository } from '@/support/domain/port/session.repository';
 import { SESSION_REPOSITORY } from '@/support/domain/port/tokens';
 import type { TurnEvent } from './dto/turn-event';
@@ -17,10 +18,15 @@ import type { TurnResult } from './dto/turn-result';
 import type { StartSessionCommand } from './start-session.command';
 import { SupportOrchestrator } from './support.orchestrator';
 
+/** How much of the previous transcript travels into the resume greeting. */
+const PREVIOUS_HISTORY_TAIL = 6;
+
 /** Everything needed to greet a freshly created session. */
 interface StartedSession {
   session: Session;
   resuming: boolean;
+  /** Cross-session continuity context (present when resuming). */
+  previous?: PreviousSessionContext;
 }
 
 @Injectable()
@@ -32,16 +38,16 @@ export class StartSessionUseCase {
   ) {}
 
   async execute(command: StartSessionCommand): Promise<TurnResult> {
-    const { session, resuming } = await this.create(command);
+    const { session, resuming, previous } = await this.create(command);
     await this.sessions.save(session);
-    return this.orchestrator.greet(session, resuming);
+    return this.orchestrator.greet(session, resuming, previous);
   }
 
   /** Streaming variant — same session creation, greeting emitted as SSE events. */
   async *stream(command: StartSessionCommand): AsyncIterable<TurnEvent> {
-    const { session, resuming } = await this.create(command);
+    const { session, resuming, previous } = await this.create(command);
     await this.sessions.save(session);
-    yield* this.orchestrator.greetStream(session, resuming);
+    yield* this.orchestrator.greetStream(session, resuming, previous);
   }
 
   /**
@@ -77,6 +83,10 @@ export class StartSessionUseCase {
         resumeTaskFrom(previous.task),
       ),
       resuming: true,
+      previous: {
+        summary: previous.summary,
+        recentHistory: previous.history.slice(-PREVIOUS_HISTORY_TAIL),
+      },
     };
   }
 }

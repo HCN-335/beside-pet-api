@@ -8,7 +8,7 @@ import type { PromptMessage } from '@/llm/domain/model/prompt-message';
 import type { Message } from '@/support/domain/model/message';
 import type { KnowledgeChunk } from '@/support/domain/port/knowledge-chunk';
 import type { ReplyPhase } from '@/support/domain/port/llm.port';
-import type { ReplyContext } from '@/support/domain/port/reply-context';
+import type { PreviousSessionContext, ReplyContext } from '@/support/domain/port/reply-context';
 import { OUTPUT_LANGUAGE } from './output-language';
 
 /** How many recent messages travel to the model with each turn. */
@@ -24,9 +24,26 @@ export function buildReplySystemPrompt(context: ReplyContext): string {
     'Speak about one thing at a time, in 2-3 short and gentle sentences. Do not use lists, assessments, or strings of advice.',
     'Keep empathy and acknowledgement to one sentence at most, and every reply except a closing MUST end with exactly one concrete question the user can answer. Never reply with empathy alone.',
     `Current phase guidance: ${PHASE_GUIDE[context.phase]}`,
+    context.previous ? formatPreviousSession(context.previous) : '',
     grounding
       ? `Ground your words in the following verified grief theory, but never quote or cite it:\n${grounding}`
       : '',
+  ]
+    .filter((line) => line.length > 0)
+    .join('\n');
+}
+
+/** Cross-session continuity block for a resume greeting. */
+function formatPreviousSession(previous: PreviousSessionContext): string {
+  const recap = previous.summary ? `Previous session recap: ${previous.summary.headline}` : '';
+  const tail = previous.recentHistory
+    .map((message) => `${message.role === 'user' ? 'User' : 'Companion'}: ${message.text}`)
+    .join('\n');
+  return [
+    'Context from the previous conversation (for continuity — never quote it verbatim):',
+    recap,
+    tail ? `Last messages exchanged:\n${tail}` : '',
+    'Gently acknowledge what was shared last time before asking your reopening question.',
   ]
     .filter((line) => line.length > 0)
     .join('\n');
