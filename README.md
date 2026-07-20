@@ -70,9 +70,7 @@ pnpm start:dev                # http://localhost:3000 — .env.development에 AN
 
 ## 로드맵
 
-### Phase 1 — 코어 상담 루프 (현재, 마무리 단계)
-
-완료:
+### Phase 1 — 코어 상담 루프 (완료)
 
 - [x] 명시적 오케스트레이터 턴 파이프라인 — 안전 → 단계 전이 → 지식 검색 → 발화 → 분석 → 영속화
 - [x] 결정론적 깊이 게이트 단계 전이 + 진행도 정량화
@@ -84,7 +82,7 @@ pnpm start:dev                # http://localhost:3000 — .env.development에 AN
 - [x] 인증·계정 — JWT httpOnly 쿠키 · 1회용 setup 토큰 · admin 관리 · 계정 신청→승인 · 만료
 - [x] 계정 단위 대화 언어 — 정적 표면은 영어 단일본, 응답은 모델이 대화 언어로 생성
 - [x] Postgres 영속화 (TypeORM · 자동 마이그레이션 · `DATABASE_URL` 필수) + Docker
-
+- [x] 대화 삭제 — 전사·마음 리포트·턴 분석 일괄 파기 (잊혀질 권리)
 - [x] OpenAPI 문서 (`/docs`, @nestjs/swagger + CLI 플러그인)
 - [x] closed 세션 거부의 도메인 레벨 이동
 - [x] docs/ 아키텍처 문서 정합화
@@ -103,11 +101,15 @@ admin 운영:
 - 고객사(테넌트)별 이용·완주율·위기율 인사이트 — turn_analyses 인덱스 기반 SQL 집계
 - Supervisor 플래그 검토 큐
 
+API:
+
+- 세션 목록 페이지네이션 — 현재는 최근 20건을 잘라서 한 번에 준다. `page`/`size` 질의와 전체 건수를 담은 응답으로 바꿔 클라이언트가 페이지 번호를 그릴 수 있게 한다 (저장소는 offset/limit + count, 정렬은 시작 시각 내림차순 고정)
+
 플랫폼:
 
 - Redis — 레이트리밋(공개 register 포함) · JWT denylist · 백그라운드 큐(BullMQ)
 - 프롬프트 캐싱 · Planner/Summarizer의 LLM 승격
-- 데이터 보존 정책 · 삭제 요청(잊혀질 권리) 처리
+- 데이터 보존 정책 · 계정 삭제 시 대화 연쇄 삭제 (개별 대화 삭제는 Phase 1에서 완료)
 
 인프라 (배포):
 
