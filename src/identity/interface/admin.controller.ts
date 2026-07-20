@@ -20,10 +20,10 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { ApproveAccountUseCase } from '../application/approve-account.usecase';
 import { CreateAccountUseCase } from '../application/create-account.usecase';
 import { DeleteAccountUseCase } from '../application/delete-account.usecase';
-import type { AccountView } from '../application/dto/account-view';
 import { ListAccountsQuery } from '../application/list-accounts.query';
 import { ReactivateAccountUseCase } from '../application/reactivate-account.usecase';
 import { RevokeAccountUseCase } from '../application/revoke-account.usecase';
@@ -32,10 +32,13 @@ import { SoftDeleteAccountUseCase } from '../application/soft-delete-account.use
 import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import { Roles } from '../guard/roles.decorator';
 import { RolesGuard } from '../guard/roles.guard';
+import { AccountResponse } from './dto/account.response';
 import { CreateAccountRequest } from './dto/create-account.request';
 import { SetExpiryRequest } from './dto/set-expiry.request';
 
-@Controller('v1/admin')
+@ApiTags('admin')
+@ApiCookieAuth()
+@Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminController {
@@ -52,7 +55,7 @@ export class AdminController {
 
   @Post('accounts')
   @HttpCode(201)
-  create(@Body() body: CreateAccountRequest): Promise<AccountView> {
+  create(@Body() body: CreateAccountRequest): Promise<AccountResponse> {
     return this.createAccount.execute({
       username: body.username,
       password: body.password,
@@ -63,37 +66,37 @@ export class AdminController {
   }
 
   @Get('accounts')
-  list(): Promise<AccountView[]> {
+  list(): Promise<AccountResponse[]> {
     return this.listAccounts.execute();
   }
 
   @Post('accounts/:id/approve')
   @HttpCode(200)
-  approve(@Param('id') id: string): Promise<AccountView> {
+  approve(@Param('id') id: string): Promise<AccountResponse> {
     return this.approveAccount.execute(id);
   }
 
   @Post('accounts/:id/revoke')
   @HttpCode(200)
-  revoke(@Param('id') id: string): Promise<AccountView> {
+  revoke(@Param('id') id: string): Promise<AccountResponse> {
     return this.revokeAccount.execute(id);
   }
 
   @Post('accounts/:id/soft-delete')
   @HttpCode(200)
-  softDelete(@Param('id') id: string): Promise<AccountView> {
+  softDelete(@Param('id') id: string): Promise<AccountResponse> {
     return this.softDeleteAccount.execute(id);
   }
 
   @Post('accounts/:id/reactivate')
   @HttpCode(200)
-  reactivate(@Param('id') id: string): Promise<AccountView> {
+  reactivate(@Param('id') id: string): Promise<AccountResponse> {
     return this.reactivateAccount.execute(id);
   }
 
   @Patch('accounts/:id/expiry')
   @HttpCode(200)
-  expiry(@Param('id') id: string, @Body() body: SetExpiryRequest): Promise<AccountView> {
+  expiry(@Param('id') id: string, @Body() body: SetExpiryRequest): Promise<AccountResponse> {
     return this.setExpiry.execute(id, body.expiresAt);
   }
 

@@ -6,23 +6,24 @@
  *  GET    /v1/sessions/:id/messages  conversation history
  */
 import { Body, Controller, Get, HttpCode, Param, Post, Res, UseGuards } from '@nestjs/common';
+import { ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import type { AuthenticatedAccount } from '@/identity/guard/authenticated-account';
 import { CurrentAccount } from '@/identity/guard/current-account.decorator';
 import { JwtAuthGuard } from '@/identity/guard/jwt-auth.guard';
 import { CloseSessionUseCase } from '../application/close-session.usecase';
-import type { SessionAnalysisView } from '../application/dto/session-analysis-view';
-import type { SessionListItem } from '../application/dto/session-list-item';
-import type { SessionStateView } from '../application/dto/session-state-view';
-import type { TurnResult } from '../application/dto/turn-result';
 import type { Requester } from '../application/ownership';
 import { SendMessageUseCase } from '../application/send-message.usecase';
 import { StartSessionUseCase } from '../application/start-session.usecase';
 import { SupportQuery } from '../application/support.query';
-import type { Message } from '../domain/model/message';
-import type { MindReport } from '../domain/model/mind-report';
+import { MessageResponse } from './dto/message.response';
+import { MindReportResponse } from './dto/mind-report.response';
 import { SendMessageRequest } from './dto/send-message.request';
+import { SessionAnalysisResponse } from './dto/session-analysis.response';
+import { SessionListItemResponse } from './dto/session-list-item.response';
+import { SessionStateResponse } from './dto/session-state.response';
 import { StartSessionRequest } from './dto/start-session.request';
+import { TurnResponse } from './dto/turn.response';
 import { pipeSse } from './sse-writer';
 
 const requesterOf = (account: AuthenticatedAccount): Requester => ({
@@ -30,7 +31,9 @@ const requesterOf = (account: AuthenticatedAccount): Requester => ({
   isAdmin: account.role === 'admin',
 });
 
-@Controller('v1/sessions')
+@ApiTags('support')
+@ApiCookieAuth()
+@Controller('sessions')
 @UseGuards(JwtAuthGuard)
 export class SupportController {
   constructor(
@@ -45,7 +48,7 @@ export class SupportController {
   start(
     @Body() body: StartSessionRequest,
     @CurrentAccount() account: AuthenticatedAccount,
-  ): Promise<TurnResult> {
+  ): Promise<TurnResponse> {
     return this.startSession.execute({
       sessionId: body.sessionId,
       ownerId: account.id,
@@ -54,6 +57,11 @@ export class SupportController {
   }
 
   @Post('stream')
+  @HttpCode(200)
+  @ApiOkResponse({
+    description:
+      'Server-sent events: one JSON TurnEvent per frame — meta, then token(s), then done.',
+  })
   startStream(
     @Body() body: StartSessionRequest,
     @CurrentAccount() account: AuthenticatedAccount,
@@ -73,7 +81,7 @@ export class SupportController {
     @Param('id') id: string,
     @Body() body: SendMessageRequest,
     @CurrentAccount() account: AuthenticatedAccount,
-  ): Promise<TurnResult> {
+  ): Promise<TurnResponse> {
     return this.sendMessage.execute({
       sessionId: id,
       text: body.text,
@@ -82,6 +90,11 @@ export class SupportController {
   }
 
   @Post(':id/messages/stream')
+  @HttpCode(200)
+  @ApiOkResponse({
+    description:
+      'Server-sent events: one JSON TurnEvent per frame — meta, then token(s), then done.',
+  })
   messageStream(
     @Param('id') id: string,
     @Body() body: SendMessageRequest,
@@ -101,14 +114,14 @@ export class SupportController {
   async close(
     @Param('id') id: string,
     @CurrentAccount() account: AuthenticatedAccount,
-  ): Promise<SessionStateView> {
+  ): Promise<SessionStateResponse> {
     const requester = requesterOf(account);
     await this.closeSession.execute({ sessionId: id, requester });
     return this.query.state(id, requester);
   }
 
   @Get()
-  list(@CurrentAccount() account: AuthenticatedAccount): Promise<SessionListItem[]> {
+  list(@CurrentAccount() account: AuthenticatedAccount): Promise<SessionListItemResponse[]> {
     return this.query.listForOwner(requesterOf(account));
   }
 
@@ -116,7 +129,7 @@ export class SupportController {
   state(
     @Param('id') id: string,
     @CurrentAccount() account: AuthenticatedAccount,
-  ): Promise<SessionStateView> {
+  ): Promise<SessionStateResponse> {
     return this.query.state(id, requesterOf(account));
   }
 
@@ -124,7 +137,7 @@ export class SupportController {
   history(
     @Param('id') id: string,
     @CurrentAccount() account: AuthenticatedAccount,
-  ): Promise<Message[]> {
+  ): Promise<MessageResponse[]> {
     return this.query.history(id, requesterOf(account));
   }
 
@@ -132,7 +145,7 @@ export class SupportController {
   analysis(
     @Param('id') id: string,
     @CurrentAccount() account: AuthenticatedAccount,
-  ): Promise<SessionAnalysisView> {
+  ): Promise<SessionAnalysisResponse> {
     return this.query.analysis(id, requesterOf(account));
   }
 
@@ -140,7 +153,7 @@ export class SupportController {
   report(
     @Param('id') id: string,
     @CurrentAccount() account: AuthenticatedAccount,
-  ): Promise<MindReport> {
+  ): Promise<MindReportResponse> {
     return this.query.report(id, requesterOf(account));
   }
 }

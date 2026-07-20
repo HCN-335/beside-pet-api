@@ -1,5 +1,5 @@
 /**
- * grief-profile.dto.ts — DTO for external-boundary validation. Narrows incoming JSON to a concrete type as soon as it arrives.
+ * grief-profile.request.ts — DTO for external-boundary validation. Narrows incoming JSON to a concrete type as soon as it arrives.
  * Once validation passes, the structure matches the domain GriefProfile (no separate mapping needed).
  */
 import { Type } from 'class-transformer';
@@ -11,9 +11,9 @@ import type {
   SituationType,
   TogetherRange,
 } from '@/support/domain/model/grief-profile';
-import { DailyStateDto } from './daily-state.dto';
+import { DailyStateRequest } from './daily-state.request';
 
-export class GriefProfileDto {
+export class GriefProfileRequest {
   @IsIn(['afterLoss', 'beforeLoss'])
   griefPath!: GriefPath;
 
@@ -40,8 +40,8 @@ export class GriefProfileDto {
 
   @IsOptional()
   @ValidateNested()
-  @Type(() => DailyStateDto)
-  dailyState?: DailyStateDto;
+  @Type(() => DailyStateRequest)
+  dailyState?: DailyStateRequest;
 
   @IsOptional()
   @IsIn(LOCALES)

@@ -1,7 +1,7 @@
 /**
  * setup-status.response.ts — GET /v1/auth/setup response body.
  */
-export interface SetupStatusResponse {
-  /** True when the first-run setup token is outstanding (no admin yet). */
-  required: boolean;
+export class SetupStatusResponse {
+  /** True while first-run setup is still pending (no admin account yet). */
+  required!: boolean;
 }

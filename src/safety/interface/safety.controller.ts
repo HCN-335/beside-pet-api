@@ -3,12 +3,15 @@
  *  GET /v1/safety/resources  List of support resources / helplines to point to in a crisis
  */
 import { Controller, Get } from '@nestjs/common';
-import { type SafetyResource, safetyResources } from '../domain/safety-resources';
+import { ApiTags } from '@nestjs/swagger';
+import { safetyResources } from '../domain/safety-resources';
+import { SafetyResourceResponse } from './dto/safety-resource.response';
 
-@Controller('v1/safety')
+@ApiTags('safety')
+@Controller('safety')
 export class SafetyController {
   @Get('resources')
-  resources(): SafetyResource[] {
+  resources(): SafetyResourceResponse[] {
     return safetyResources();
   }
 }

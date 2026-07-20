@@ -5,7 +5,7 @@
  */
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { GriefProfileDto } from './grief-profile.dto';
+import { GriefProfileRequest } from './grief-profile.request';
 
 export class StartSessionRequest {
   @IsString()
@@ -15,6 +15,6 @@ export class StartSessionRequest {
   /** Present for a first-time (onboarding) session; omitted to continue from history. */
   @IsOptional()
   @ValidateNested()
-  @Type(() => GriefProfileDto)
-  griefProfile?: GriefProfileDto;
+  @Type(() => GriefProfileRequest)
+  griefProfile?: GriefProfileRequest;
 }
