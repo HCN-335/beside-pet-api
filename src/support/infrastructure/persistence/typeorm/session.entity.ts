@@ -5,7 +5,7 @@
  * aggregate's snapshot boundary. Per-turn analyses live in their own table
  * (turn_analyses) so they stay queryable for aggregation.
  */
-import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { nullable } from '@/infrastructure/database/transformers';
 import type { GriefProfile } from '@/support/domain/model/grief-profile';
 import type { TaskId } from '@/support/domain/model/grief-task';
@@ -51,8 +51,8 @@ export class SessionEntity {
   @Column('jsonb', { nullable: true, transformer: nullable<MindReport>() })
   report?: MindReport;
 
-  /** DB bookkeeping (not part of the domain) — enables time-based analytics. */
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  /** When the conversation began — set by the domain, shown to the user. */
+  @Column('timestamptz', { name: 'created_at' })
   createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })

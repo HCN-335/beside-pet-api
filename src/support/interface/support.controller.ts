@@ -2,16 +2,28 @@
  * support.controller.ts — thin HTTP surface for support. Login required; identity is derived from the token.
  *  POST   /v1/sessions               start a session → first reply (owner = logged-in account)
  *  POST   /v1/sessions/:id/messages  one user turn → TurnResult
+ *  DELETE /v1/sessions/:id           erase the conversation (right to erasure)
  *  GET    /v1/sessions/:id           current state (resume)
  *  GET    /v1/sessions/:id/messages  conversation history
  */
-import { Body, Controller, Get, HttpCode, Param, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import type { AuthenticatedAccount } from '@/identity/guard/authenticated-account';
 import { CurrentAccount } from '@/identity/guard/current-account.decorator';
 import { JwtAuthGuard } from '@/identity/guard/jwt-auth.guard';
 import { CloseSessionUseCase } from '../application/close-session.usecase';
+import { DeleteSessionUseCase } from '../application/delete-session.usecase';
 import type { Requester } from '../application/ownership';
 import { SendMessageUseCase } from '../application/send-message.usecase';
 import { StartSessionUseCase } from '../application/start-session.usecase';
@@ -40,6 +52,7 @@ export class SupportController {
     private readonly startSession: StartSessionUseCase,
     private readonly sendMessage: SendMessageUseCase,
     private readonly closeSession: CloseSessionUseCase,
+    private readonly deleteSession: DeleteSessionUseCase,
     private readonly query: SupportQuery,
   ) {}
 
@@ -118,6 +131,13 @@ export class SupportController {
     const requester = requesterOf(account);
     await this.closeSession.execute({ sessionId: id, requester });
     return this.query.state(id, requester);
+  }
+
+  /** Erases the conversation, its report, and its analyses. Irreversible. */
+  @Delete(':id')
+  @HttpCode(204)
+  remove(@Param('id') id: string, @CurrentAccount() account: AuthenticatedAccount): Promise<void> {
+    return this.deleteSession.execute({ sessionId: id, requester: requesterOf(account) });
   }
 
   @Get()

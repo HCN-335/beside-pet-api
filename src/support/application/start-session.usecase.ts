@@ -8,6 +8,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import type { AccountRepository } from '@/identity/domain/port/account.repository';
 import { ACCOUNT_REPOSITORY } from '@/identity/domain/port/tokens';
+import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import { FIRST_TASK, isClosingTask, type TaskId } from '@/support/domain/model/grief-task';
 import { Session } from '@/support/domain/model/session';
 import type { PreviousSessionContext } from '@/support/domain/port/reply-context';
@@ -35,6 +36,7 @@ export class StartSessionUseCase {
     private readonly orchestrator: SupportOrchestrator,
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
     @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
+    @Inject(TIME_PROVIDER) private readonly time: TimeProvider,
   ) {}
 
   async execute(command: StartSessionCommand): Promise<TurnResult> {
@@ -67,7 +69,12 @@ export class StartSessionUseCase {
   private async createFromCommand(command: StartSessionCommand): Promise<StartedSession> {
     if (command.griefProfile) {
       return {
-        session: Session.start(command.sessionId, command.ownerId, command.griefProfile),
+        session: Session.start(
+          command.sessionId,
+          command.ownerId,
+          command.griefProfile,
+          this.time.now(),
+        ),
         resuming: false,
       };
     }
@@ -80,6 +87,7 @@ export class StartSessionUseCase {
         command.sessionId,
         command.ownerId,
         previous.griefProfile,
+        this.time.now(),
         resumeTaskFrom(previous.task),
       ),
       resuming: true,

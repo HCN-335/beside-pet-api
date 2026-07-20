@@ -31,6 +31,18 @@ export class PostgresSessionRepository implements SessionRepository {
     });
   }
 
+  /**
+   * Erases the session row and its analyses in one transaction. A hard delete:
+   * the user asked for the record to be gone, so nothing is left behind to
+   * re-link them to it.
+   */
+  async delete(id: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(TurnAnalysisEntity).delete({ sessionId: id });
+      await manager.getRepository(SessionEntity).delete({ id });
+    });
+  }
+
   async findById(id: string): Promise<Session | undefined> {
     const entity = await this.dataSource.getRepository(SessionEntity).findOne({ where: { id } });
     if (!entity) {

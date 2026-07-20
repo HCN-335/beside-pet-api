@@ -21,6 +21,7 @@ export class Session {
   private constructor(
     readonly id: string,
     readonly ownerId: string,
+    readonly startedAt: string,
     private _griefProfile: GriefProfile,
     private _task: TaskId,
     private _retryCount: number,
@@ -42,11 +43,13 @@ export class Session {
     id: string,
     ownerId: string,
     griefProfile: GriefProfile,
+    startedAt: string,
     startTask: TaskId = FIRST_TASK,
   ): Session {
     return new Session(
       id,
       ownerId,
+      startedAt,
       griefProfile,
       startTask,
       0,
@@ -65,6 +68,7 @@ export class Session {
     return new Session(
       snapshot.id,
       snapshot.ownerId,
+      snapshot.startedAt,
       snapshot.griefProfile,
       snapshot.task,
       snapshot.retryCount,
@@ -175,6 +179,7 @@ export class Session {
     return {
       id: this.id,
       ownerId: this.ownerId,
+      startedAt: this.startedAt,
       griefProfile: this.griefProfile,
       task: this._task,
       retryCount: this._retryCount,

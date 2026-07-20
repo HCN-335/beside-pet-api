@@ -10,6 +10,7 @@ import { PlannerAgent } from './application/agent/planner.agent';
 import { SummarizerAgent } from './application/agent/summarizer.agent';
 import { SupervisorAgent } from './application/agent/supervisor.agent';
 import { CloseSessionUseCase } from './application/close-session.usecase';
+import { DeleteSessionUseCase } from './application/delete-session.usecase';
 import { SendMessageUseCase } from './application/send-message.usecase';
 import { StartSessionUseCase } from './application/start-session.usecase';
 import { SupportOrchestrator } from './application/support.orchestrator';
@@ -38,6 +39,7 @@ import { SupportController } from './interface/support.controller';
     StartSessionUseCase,
     SendMessageUseCase,
     CloseSessionUseCase,
+    DeleteSessionUseCase,
     SupportQuery,
     // port → adapter bindings (SESSION_REPOSITORY comes from the global PersistenceModule)
     { provide: LLM_PORT, useClass: ReplyComposerAdapter },

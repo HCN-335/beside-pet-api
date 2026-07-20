@@ -30,6 +30,7 @@ export class SupportQuery {
     const sessions = await this.sessions.findByOwner(requester.id, SESSION_LIST_LIMIT);
     return sessions.map((session) => ({
       sessionId: session.id,
+      startedAt: session.startedAt,
       closed: session.closed,
       reachedTask: session.task,
       progress: progressOf(session.task),

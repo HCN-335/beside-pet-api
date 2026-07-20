@@ -14,6 +14,7 @@ export const toSessionEntity = (snapshot: SessionSnapshot): SessionEntity => {
   const entity = new SessionEntity();
   entity.id = snapshot.id;
   entity.ownerId = snapshot.ownerId;
+  entity.createdAt = new Date(snapshot.startedAt);
   entity.task = snapshot.task;
   entity.retryCount = snapshot.retryCount;
   entity.supportLevel = snapshot.supportLevel;
@@ -70,6 +71,7 @@ export const toSessionSnapshot = (
 ): SessionSnapshot => ({
   id: entity.id,
   ownerId: entity.ownerId,
+  startedAt: entity.createdAt.toISOString(),
   griefProfile: entity.griefProfile,
   task: entity.task,
   retryCount: entity.retryCount,

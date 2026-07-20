@@ -9,4 +9,6 @@ export interface SessionRepository {
   findById(id: string): Promise<Session | undefined>;
   /** The owner's sessions, newest first (for the session list + cross-session continuity). */
   findByOwner(ownerId: string, limit?: number): Promise<Session[]>;
+  /** Erases a session and everything derived from it. Irreversible by design. */
+  delete(id: string): Promise<void>;
 }

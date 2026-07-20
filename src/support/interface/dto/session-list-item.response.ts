@@ -5,6 +5,8 @@ import type { Locale } from '@/shared/locale';
 
 export class SessionListItemResponse {
   sessionId!: string;
+  /** UTC instant the conversation began (ISO-8601). */
+  startedAt!: string;
   closed!: boolean;
   reachedTask!: number;
   progress!: number;

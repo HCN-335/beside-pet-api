@@ -14,6 +14,8 @@ import type { TurnAnalysis } from './turn-analysis';
 export interface SessionSnapshot {
   id: string;
   ownerId: string;
+  /** UTC instant the conversation began. */
+  startedAt: string;
   griefProfile: GriefProfile;
   task: TaskId;
   retryCount: number;
