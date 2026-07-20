@@ -5,6 +5,7 @@
 import type { GriefProfile } from './grief-profile';
 import type { TaskId } from './grief-task';
 import type { Message } from './message';
+import type { MindReport } from './mind-report';
 import type { SessionSummary } from './session-summary';
 import type { SupportLevel } from './support-level';
 import type { SupportPlan } from './support-plan';
@@ -22,4 +23,6 @@ export interface SessionSnapshot {
   plan?: SupportPlan;
   analyses: TurnAnalysis[];
   summary?: SessionSummary;
+  /** Written once when first requested, then served from here. */
+  report?: MindReport;
 }

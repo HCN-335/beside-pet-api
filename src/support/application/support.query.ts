@@ -39,13 +39,24 @@ export class SupportQuery {
     }));
   }
 
-  /** User-facing mind report — generated lazily from the closed session. */
+  /**
+   * User-facing mind report. Written once on first request and kept with the
+   * session: the reflection on a closed conversation does not change, and
+   * regenerating it would spend a model call on every view.
+   */
   async report(id: string, requester: Requester): Promise<MindReport> {
     const session = await this.require(id, requester);
     if (!isReportAvailable(session.task, session.closed)) {
       throw new ConflictException('The report is not available for this session yet.');
     }
-    return this.mindReport.build(session);
+    const stored = session.report;
+    if (stored) {
+      return stored;
+    }
+    const report = await this.mindReport.build(session);
+    session.setReport(report);
+    await this.sessions.save(session);
+    return report;
   }
 
   async state(id: string, requester: Requester): Promise<SessionStateView> {

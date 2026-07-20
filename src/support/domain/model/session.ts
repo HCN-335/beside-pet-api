@@ -9,6 +9,7 @@ import type { Locale } from '@/shared/locale';
 import type { GriefProfile } from './grief-profile';
 import { FIRST_TASK, type TaskId } from './grief-task';
 import { createMessage, type Message, type Role } from './message';
+import type { MindReport } from './mind-report';
 import { SessionClosedError } from './session-closed.error';
 import type { SessionSnapshot } from './session-snapshot';
 import type { SessionSummary } from './session-summary';
@@ -29,6 +30,7 @@ export class Session {
     private _plan: SupportPlan | undefined,
     private readonly _analyses: TurnAnalysis[],
     private _summary: SessionSummary | undefined,
+    private _report: MindReport | undefined,
   ) {}
 
   /**
@@ -54,6 +56,7 @@ export class Session {
       undefined,
       [],
       undefined,
+      undefined,
     );
   }
 
@@ -71,6 +74,7 @@ export class Session {
       snapshot.plan,
       [...snapshot.analyses],
       snapshot.summary,
+      snapshot.report,
     );
   }
 
@@ -154,6 +158,19 @@ export class Session {
     this._closed = true;
   }
 
+  /** The mind report, once it has been written. */
+  get report(): MindReport | undefined {
+    return this._report;
+  }
+
+  /**
+   * Stores the mind report. Writing it costs a model call, so it is kept with
+   * the session and never regenerated — a closed session's reflection is final.
+   */
+  setReport(report: MindReport): void {
+    this._report = report;
+  }
+
   snapshot(): SessionSnapshot {
     return {
       id: this.id,
@@ -167,6 +184,7 @@ export class Session {
       plan: this._plan,
       analyses: [...this._analyses],
       summary: this._summary,
+      report: this._report,
     };
   }
 }

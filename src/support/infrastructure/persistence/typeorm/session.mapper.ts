@@ -22,6 +22,7 @@ export const toSessionEntity = (snapshot: SessionSnapshot): SessionEntity => {
   entity.history = [...snapshot.history];
   entity.plan = snapshot.plan;
   entity.summary = snapshot.summary;
+  entity.report = snapshot.report;
   return entity;
 };
 
@@ -78,4 +79,5 @@ export const toSessionSnapshot = (
   plan: entity.plan,
   analyses: analyses.map(toTurnAnalysis),
   summary: entity.summary,
+  report: entity.report,
 });

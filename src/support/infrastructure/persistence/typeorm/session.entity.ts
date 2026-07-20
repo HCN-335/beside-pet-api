@@ -10,6 +10,7 @@ import { nullable } from '@/infrastructure/database/transformers';
 import type { GriefProfile } from '@/support/domain/model/grief-profile';
 import type { TaskId } from '@/support/domain/model/grief-task';
 import type { Message } from '@/support/domain/model/message';
+import type { MindReport } from '@/support/domain/model/mind-report';
 import type { SessionSummary } from '@/support/domain/model/session-summary';
 import type { SupportLevel } from '@/support/domain/model/support-level';
 import type { SupportPlan } from '@/support/domain/model/support-plan';
@@ -46,6 +47,9 @@ export class SessionEntity {
 
   @Column('jsonb', { nullable: true, transformer: nullable<SessionSummary>() })
   summary?: SessionSummary;
+
+  @Column('jsonb', { nullable: true, transformer: nullable<MindReport>() })
+  report?: MindReport;
 
   /** DB bookkeeping (not part of the domain) — enables time-based analytics. */
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
