@@ -151,3 +151,6 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+
+# migrations are deployment assets, kept out of the published source
+src/infrastructure/database/migrations/

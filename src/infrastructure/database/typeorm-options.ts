@@ -1,21 +1,28 @@
 /**
- * typeorm-options.ts — shared Postgres DataSource options.
- * Used by both the runtime module (TypeOrmModule.forRoot) and the CLI DataSource
- * (data-source.ts). DATABASE_URL is read from the process environment; SSL is
- * opt-in via DATABASE_SSL=true (e.g. for Supabase). synchronize is always off —
- * schema changes go through migrations.
+ * typeorm-options.ts — shared Postgres DataSource options factory.
+ * Used by both the runtime module (TypeOrmModule.forRootAsync + ConfigService)
+ * and the CLI DataSource (data-source.ts). Values arrive as an explicit input
+ * so neither path reads the environment here. SSL is opt-in (e.g. Supabase);
+ * synchronize is always off — schema changes go through migrations.
+ * Migrations load by path (not import): they are deployment assets, not part
+ * of the published source.
  */
+import { join } from 'node:path';
 import type { DataSourceOptions } from 'typeorm';
 import { AccountEntity } from '@/identity/infrastructure/typeorm/account.entity';
 import { SessionEntity } from '@/support/infrastructure/persistence/typeorm/session.entity';
 import { TurnAnalysisEntity } from '@/support/infrastructure/persistence/typeorm/turn-analysis.entity';
-import { InitialSchema1730000000000 } from './migrations/1730000000000-initial-schema';
 
-export const dataSourceOptions: DataSourceOptions = {
+export interface DatabaseOptionsInput {
+  url: string;
+  ssl: boolean;
+}
+
+export const buildDataSourceOptions = (input: DatabaseOptionsInput): DataSourceOptions => ({
   type: 'postgres',
-  url: process.env.DATABASE_URL,
+  url: input.url,
   entities: [AccountEntity, SessionEntity, TurnAnalysisEntity],
-  migrations: [InitialSchema1730000000000],
+  migrations: [join(__dirname, 'migrations', '*{.ts,.js}')],
   synchronize: false,
-  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
-};
+  ssl: input.ssl ? { rejectUnauthorized: false } : undefined,
+});
