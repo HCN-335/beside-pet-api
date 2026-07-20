@@ -9,11 +9,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { TIME_PROVIDER, type TimeProvider } from '@/shared/time/time-provider';
 import { petNameOf, preferredLanguageOf } from '@/support/domain/model/grief-profile';
 import { progressOf } from '@/support/domain/model/grief-task';
-import {
-  type MindReport,
-  REPORT_SECTION_ORDER,
-  REPORT_SECTION_TITLES,
-} from '@/support/domain/model/mind-report';
+import { type MindReport, REPORT_SECTION_ORDER } from '@/support/domain/model/mind-report';
 import type { Session } from '@/support/domain/model/session';
 import { isCrisis } from '@/support/domain/model/support-level';
 import type { LlmPort } from '@/support/domain/port/llm.port';
@@ -39,14 +35,13 @@ export class MindReportAgent {
       history: session.history,
     };
     const bodies = await this.llm.composeReportBodies(context);
-    const titles = REPORT_SECTION_TITLES;
     return {
       at: this.time.now(),
       petName: context.petName,
       reachedTask: context.reachedTask,
       progress: context.progress,
       locale,
-      sections: REPORT_SECTION_ORDER.map((key) => ({ key, title: titles[key], body: bodies[key] })),
+      sections: REPORT_SECTION_ORDER.map((key) => ({ key, body: bodies[key] })),
     };
   }
 }

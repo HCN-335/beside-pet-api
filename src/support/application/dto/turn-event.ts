@@ -5,7 +5,7 @@
  * a sequence of `token` events; `done` carries the final TurnResult. This mirrors
  * the "structure first, text streamed" contract the synchronous TurnResult has.
  */
-import { labelOf, progressOf } from '@/support/domain/model/grief-task';
+import { progressOf } from '@/support/domain/model/grief-task';
 import type { Session } from '@/support/domain/model/session';
 import { type TurnResult, toTurnResult } from './turn-result';
 
@@ -13,7 +13,6 @@ import { type TurnResult, toTurnResult } from './turn-result';
 export interface MetaEvent {
   kind: 'meta';
   task: number;
-  taskLabel: string;
   progress: number;
   supportLevel: number;
   done: boolean;
@@ -36,7 +35,6 @@ export type TurnEvent = MetaEvent | TokenEvent | DoneEvent;
 export const toMetaEvent = (session: Session): MetaEvent => ({
   kind: 'meta',
   task: session.task,
-  taskLabel: labelOf(session.task),
   progress: progressOf(session.task),
   supportLevel: session.supportLevel,
   done: session.closed,

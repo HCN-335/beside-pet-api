@@ -3,7 +3,7 @@
  */
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { preferredLanguageOf } from '@/support/domain/model/grief-profile';
-import { labelOf, progressOf } from '@/support/domain/model/grief-task';
+import { progressOf } from '@/support/domain/model/grief-task';
 import type { Message } from '@/support/domain/model/message';
 import { isReportAvailable, type MindReport } from '@/support/domain/model/mind-report';
 import type { Session } from '@/support/domain/model/session';
@@ -32,7 +32,6 @@ export class SupportQuery {
       sessionId: session.id,
       closed: session.closed,
       reachedTask: session.task,
-      taskLabel: labelOf(session.task),
       progress: progressOf(session.task),
       petName: session.griefProfile.petName,
       preferredLanguage: preferredLanguageOf(session.griefProfile),
@@ -54,7 +53,6 @@ export class SupportQuery {
     return {
       sessionId: session.id,
       task: session.task,
-      taskLabel: labelOf(session.task),
       progress: progressOf(session.task),
       supportLevel: session.supportLevel,
       closed: session.closed,

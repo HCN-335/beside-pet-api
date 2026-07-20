@@ -7,7 +7,6 @@ export interface SessionListItem {
   sessionId: string;
   closed: boolean;
   reachedTask: number;
-  taskLabel: string;
   progress: number;
   petName?: string;
   /** The session's conversation language — used to restore the returning user's UI locale. */

@@ -4,7 +4,6 @@
 export interface SessionStateView {
   sessionId: string;
   task: number;
-  taskLabel: string;
   progress: number;
   supportLevel: number;
   closed: boolean;

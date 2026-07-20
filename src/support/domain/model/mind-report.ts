@@ -17,10 +17,9 @@ export const REPORT_MIN_TASK: TaskId = 2;
 export const isReportAvailable = (task: TaskId, closed: boolean): boolean =>
   closed && task >= REPORT_MIN_TASK;
 
-/** One card of the report: a fixed title + an LLM-written warm body. */
+/** One card of the report: a stable key plus its LLM-written warm body. */
 export interface MindReportSection {
   key: ReportSectionKey;
-  title: string;
   body: string;
 }
 
@@ -41,11 +40,3 @@ export const REPORT_SECTION_ORDER: ReportSectionKey[] = [
   'keepsake',
   'encouragement',
 ];
-
-/** Fixed card titles (bodies are written per session). */
-export const REPORT_SECTION_TITLES: Record<ReportSectionKey, string> = {
-  journey: 'The path you walked',
-  emotions: 'What your heart carried',
-  keepsake: 'A keepsake to hold',
-  encouragement: 'A word for you',
-};
