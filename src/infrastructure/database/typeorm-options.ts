@@ -3,9 +3,8 @@
  * Used by both the runtime module (TypeOrmModule.forRootAsync + ConfigService)
  * and the CLI DataSource (data-source.ts). Values arrive as an explicit input
  * so neither path reads the environment here. SSL is opt-in (e.g. Supabase);
- * synchronize is always off — schema changes go through migrations.
- * Migrations load by path (not import): they are deployment assets, not part
- * of the published source.
+ * synchronize is always off — schema changes go through migrations, which
+ * load by path so the CLI and the runtime resolve the same files.
  */
 import { join } from 'node:path';
 import type { DataSourceOptions } from 'typeorm';
