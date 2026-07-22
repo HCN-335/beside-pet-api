@@ -115,12 +115,16 @@ API:
 - 프롬프트 캐싱 · Planner/Summarizer의 LLM 승격
 - 데이터 보존 정책 · 계정 삭제 시 대화 연쇄 삭제 (개별 대화 삭제는 Phase 1에서 완료)
 
-인프라 (배포):
+인프라 (배포) — 로컬은 Docker로 배포 형태를 그대로 리허설하고, 클라우드는 **AWS 단일**:
 
-- 1차: ECR 이미지 → **App Runner** + 관리형 Postgres(RDS/Supabase, SSL) — 시크릿은 Secrets Manager/SSM, 로그는 CloudWatch
-- 승격: ALB + **ECS Fargate** + CDK, GitHub Actions CI (빌드 → ECR → 배포)
+- 원칙: **12-factor** — 모든 설정이 env로만 주입되므로, 아래 두 경로 사이를 오가는 데 앱 코드 변경이 없다
+- 경로 ① (시작): **관리형 인스턴스** — EC2(t3.micro)가 ECR 이미지를 compose로 구동 + **RDS Postgres**(SSL). 프리티어 범위 내 운영이 목표
+- 경로 ② (승격): 같은 이미지를 **ECS Fargate**로 — ALB + CDK. 이미지·env 계약이 동일해 전환은 인프라 작업만이다
+- **단일 도메인**: CloudFront가 `/v1/*` → API, 그 외 → Web을 라우팅 — 기본 도메인으로 HTTPS 확보, CORS·쿠키 SameSite 문제를 원천 차단 (SSE 통과 여부는 배포 초기 검증 항목)
+- CI/CD: GitHub Actions — **OIDC 역할 인증**(장기 액세스 키 없음) → 빌드 → ECR → SSM Run Command로 EC2 갱신
+- 시크릿: SSM Parameter Store · 월 예산 알람으로 비용 상한 감시
 - Langfuse self-host — 단일 노드 compose로 시작, 트래픽에 따라 Helm 승격 (관측 데이터는 서비스 가용성과 분리)
-- 프론트 호스팅: Vercel/Amplify — API base는 env 주입
+- 프론트: standalone 이미지를 같은 EC2에서 구동 (서버 렌더·서버 액션이 있어 정적 export 불가)
 
 ### Phase 3 — AI 주도 검증 자동화 (구상)
 
