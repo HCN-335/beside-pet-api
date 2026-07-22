@@ -1,10 +1,10 @@
-# 로컬 개발: DB만 띄우고 앱은 호스트에서 (hot reload):
+# Local development: run only the DB in Docker and the app on the host (hot reload):
 #   docker compose up -d db
 #   DATABASE_URL=postgres://beside:beside@localhost:5432/besidepet pnpm start:dev
-# 전체 스택을 컨테이너로 (배포 형태 점검):
-#   docker compose --profile full up --build
+# Full stack in containers (rehearses the deployed shape):
+#   ANTHROPIC_API_KEY=sk-... docker compose --profile full up --build
 services:
-  # PostgreSQL + pgvector : 관계형 + JSONB + 벡터(RAG)
+  # PostgreSQL + pgvector: relational + JSONB now, vectors (RAG) later.
   db:
     image: pgvector/pgvector:pg16
     environment:
@@ -21,7 +21,7 @@ services:
       timeout: 3s
       retries: 10
 
-  # API : 프로덕션 이미지(Dockerfile)로 빌드. dev에선 안 뜨고, --profile full 일 때만.
+  # API: the production image (Dockerfile). Not started in dev; only with --profile full.
   api:
     profiles: ["full"]
     build: .
@@ -32,20 +32,12 @@ services:
       PORT: 3000
       DATABASE_URL: postgres://beside:beside@db:5432/besidepet
       JWT_SECRET: dev-insecure-secret-change-me
-      # admin account: created at first run via the one-time setup token in the boot log
-      # ANTHROPIC_API_KEY: ""   # 비우면 결정론적 stub
+      # Live-only: the server refuses to boot without a real key.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required — the model runs live only}
+      # The first admin account is created at first run via the one-time setup
+      # token printed in the boot log (POST /v1/auth/setup).
     ports:
       - "3000:3000"
-
-  # Langfuse : LLM 트레이싱/관측 (선택, 끄고 시작해도 됨)
-  # langfuse:
-  #   image: langfuse/langfuse:latest
-  #   depends_on: [db]
-  #   ports: ["3001:3000"]
-  #   environment:
-  #     DATABASE_URL: postgres://beside:beside@db:5432/besidepet
-  #     NEXTAUTH_SECRET: dev-secret
-  #     SALT: dev-salt
 
 volumes:
   dbdata:

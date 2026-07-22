@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Pet-loss emotional support agent API (NestJS, DDD, Claude)",
   "license": "MIT",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.26.2",
   "scripts": {
     "start": "nest start",
     "start:dev": "NODE_ENV=development nest start --watch",
