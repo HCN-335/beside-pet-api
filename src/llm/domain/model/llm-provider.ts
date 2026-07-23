@@ -6,5 +6,7 @@ export enum LlmProvider {
   Anthropic = 'anthropic',
 }
 
+const PROVIDER_VALUES: readonly string[] = Object.values(LlmProvider);
+
 export const isLlmProvider = (value: string): value is LlmProvider =>
-  (Object.values(LlmProvider) as string[]).includes(value);
+  PROVIDER_VALUES.includes(value);

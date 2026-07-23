@@ -11,26 +11,20 @@ import type { TaskId } from '@/support/domain/model/grief-task';
 import type { KnowledgePort } from '@/support/domain/port/knowledge.port';
 import type { KnowledgeChunk } from '@/support/domain/port/knowledge-chunk';
 
-interface RawChunk {
-  source?: unknown;
-  task_id?: unknown;
-  tags?: unknown;
-  content?: unknown;
-}
-
 interface IndexedChunk extends KnowledgeChunk {
   taskId?: TaskId;
 }
 
 const KNOWLEDGE_PATH = join(process.cwd(), 'rag-knowledge', 'grief-knowledge.json');
 
-const isTaskId = (value: unknown): value is TaskId =>
-  typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 5;
+/** JSON.parse returns `any`; this alias pins the boundary to a checkable shape. */
+const parseJson: (text: string) => object | null = JSON.parse;
 
-const asString = (value: unknown): string => (typeof value === 'string' ? value : '');
+const isTaskId = (value: number): value is TaskId =>
+  Number.isInteger(value) && value >= 0 && value <= 5;
 
-const asTags = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((tag): tag is string => typeof tag === 'string') : [];
+const isEntry = (value: object | undefined): value is object =>
+  typeof value === 'object' && value !== null;
 
 @Injectable()
 export class RagKnowledgeAdapter implements KnowledgePort {
@@ -45,34 +39,35 @@ export class RagKnowledgeAdapter implements KnowledgePort {
 
   private load(): IndexedChunk[] {
     try {
-      const parsed: unknown = JSON.parse(readFileSync(KNOWLEDGE_PATH, 'utf-8'));
-      const raw = this.extractChunks(parsed);
-      return raw.map((chunk) => this.normalize(chunk));
+      const parsed = parseJson(readFileSync(KNOWLEDGE_PATH, 'utf-8'));
+      return this.extractChunks(parsed).map((chunk) => this.normalize(chunk));
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'unknown error';
+      const reason = error instanceof Error ? error.message : 'unreadable knowledge file';
       this.logger.warn(`Failed to load knowledge base — operating with an empty index: ${reason}`);
       return [];
     }
   }
 
-  private extractChunks(parsed: unknown): RawChunk[] {
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'chunks' in parsed &&
-      Array.isArray((parsed as { chunks: unknown }).chunks)
-    ) {
-      return (parsed as { chunks: RawChunk[] }).chunks;
+  private extractChunks(parsed: object | null): object[] {
+    if (parsed === null || !('chunks' in parsed)) {
+      return [];
     }
-    return [];
+    const { chunks } = parsed;
+    return Array.isArray(chunks) ? chunks.filter(isEntry) : [];
   }
 
-  private normalize(chunk: RawChunk): IndexedChunk {
+  private normalize(chunk: object): IndexedChunk {
     return {
-      source: asString(chunk.source),
-      content: asString(chunk.content),
-      tags: asTags(chunk.tags),
-      taskId: isTaskId(chunk.task_id) ? chunk.task_id : undefined,
+      source: 'source' in chunk && typeof chunk.source === 'string' ? chunk.source : '',
+      content: 'content' in chunk && typeof chunk.content === 'string' ? chunk.content : '',
+      tags:
+        'tags' in chunk && Array.isArray(chunk.tags)
+          ? chunk.tags.filter((tag): tag is string => typeof tag === 'string')
+          : [],
+      taskId:
+        'task_id' in chunk && typeof chunk.task_id === 'number' && isTaskId(chunk.task_id)
+          ? chunk.task_id
+          : undefined,
     };
   }
 }

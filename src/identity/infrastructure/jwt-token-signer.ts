@@ -10,13 +10,11 @@ import type { TokenSigner } from '@/identity/domain/port/token-signer.port';
 
 const DEFAULT_TTL = '7d';
 
-const isClaims = (value: unknown): value is TokenClaims => {
-  if (typeof value !== 'object' || !value) {
-    return false;
-  }
-  const claims = value as Partial<TokenClaims>;
-  return typeof claims.sub === 'string' && typeof claims.role === 'string';
-};
+const isClaims = (value: object): value is TokenClaims =>
+  'sub' in value &&
+  typeof value.sub === 'string' &&
+  'role' in value &&
+  typeof value.role === 'string';
 
 @Injectable()
 export class JwtTokenSigner implements TokenSigner {
@@ -40,7 +38,7 @@ export class JwtTokenSigner implements TokenSigner {
 
   verify(token: string): TokenClaims | undefined {
     try {
-      const decoded: unknown = this.jwt.verify(token, { secret: this.secret });
+      const decoded = this.jwt.verify<object>(token, { secret: this.secret });
       return isClaims(decoded) ? { sub: decoded.sub, role: decoded.role } : undefined;
     } catch {
       return undefined;

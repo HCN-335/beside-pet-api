@@ -29,8 +29,8 @@ export class SummarizerAgent {
 }
 
 /** Closing (task 5) means all four grief tasks were worked through. */
-function headlineFor(reachedTask: number, turnCount: number): string {
-  if (isClosingTask(reachedTask as TaskId)) {
+function headlineFor(reachedTask: TaskId, turnCount: number): string {
+  if (isClosingTask(reachedTask)) {
     return `Worked through all 4 grief tasks across ${turnCount} turns.`;
   }
   return `Reached task ${reachedTask} of 4 across ${turnCount} turns.`;

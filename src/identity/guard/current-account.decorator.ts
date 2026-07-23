@@ -10,7 +10,7 @@ interface RequestWithAuth {
 }
 
 export const CurrentAccount = createParamDecorator(
-  (_data: unknown, context: ExecutionContext): AuthenticatedAccount | undefined => {
+  (_data: undefined, context: ExecutionContext): AuthenticatedAccount | undefined => {
     const request = context.switchToHttp().getRequest<RequestWithAuth>();
     return request.account;
   },
