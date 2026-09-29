@@ -20,6 +20,7 @@ Use pnpm and Node.js 24. Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pn
 
 ## Task routing
 
+- Define approved scope in a GitHub issue with `.claude/skills/prd/SKILL.md`; implement one leaf issue with `.claude/skills/implement-prd/SKILL.md`; review its finished PR with `.claude/skills/review-worktree/SKILL.md`.
 - To refresh onboarding and the CLI index, use `.claude/skills/onboard/SKILL.md`.
 - Before changing production code, search related ADR and dev-log records with `pnpm docs:search`, read the owning rule, and use `.claude/skills/tdd/SKILL.md`.
 - For a hard-to-reverse choice, use `.claude/skills/adr/SKILL.md`.
