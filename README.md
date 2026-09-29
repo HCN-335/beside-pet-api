@@ -133,6 +133,7 @@ API:
 
 ## 개발 하네스
 
+- [API 명령어와 로컬 실행](docs/cli-reference.md)은 `/onboard` 스킬로 현재 `package.json`·설정·워크플로와 대조해 갱신합니다.
 - [`AGENTS.md`](AGENTS.md)가 에이전트 공통 진입점입니다. 현재 제약은 [rules](.claude/rules/), 반복 절차는 [skills](.claude/skills/)에 둡니다.
 - [Polydeukes](polydeukes.config.yaml)가 편집 시점과 커밋 변경분에서 코딩 규율을 판정합니다. 새 규율은 먼저 권고로 관측하고, 검증된 경우에만 차단으로 올립니다.
 - [결정 기록](docs/adr/)과 구현 메모(`docs/dev-log/`)는 Markdown이 원본이고, `pnpm docs:search`가 로컬 `docs.db` 인덱스에서 필요한 기록만 찾습니다.

@@ -20,6 +20,7 @@ Use pnpm and Node.js 24. Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pn
 
 ## Task routing
 
+- To refresh onboarding and the CLI index, use `.claude/skills/onboard/SKILL.md`.
 - Before changing production code, search related ADR and dev-log records with `pnpm docs:search`, read the owning rule, and use `.claude/skills/tdd/SKILL.md`.
 - For a hard-to-reverse choice, use `.claude/skills/adr/SKILL.md`.
 - For a non-obvious implementation insight, use `.claude/skills/dev-log/SKILL.md`.
