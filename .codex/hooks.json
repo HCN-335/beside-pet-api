@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --input-type=module -e \"import { existsSync } from 'node:fs'; import { dirname, join } from 'node:path'; import { pathToFileURL } from 'node:url'; let dir = process.cwd(); while (!existsSync(join(dir, '.codex/hooks/covenant-pretooluse.mjs'))) { const parent = dirname(dir); if (parent === dir) throw new Error('Codex covenant hook not found'); dir = parent; } await import(pathToFileURL(join(dir, '.codex/hooks/covenant-pretooluse.mjs')).href);\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --input-type=module -e \"import { existsSync } from 'node:fs'; import { dirname, join } from 'node:path'; import { pathToFileURL } from 'node:url'; let dir = process.cwd(); while (!existsSync(join(dir, '.codex/hooks/covenant-pretooluse.mjs'))) { const parent = dirname(dir); if (parent === dir) throw new Error('Codex covenant hook not found'); dir = parent; } await import(pathToFileURL(join(dir, '.codex/hooks/covenant-pretooluse.mjs')).href);\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --input-type=module -e \"import { existsSync } from 'node:fs'; import { dirname, join } from 'node:path'; import { pathToFileURL } from 'node:url'; let dir = process.cwd(); while (!existsSync(join(dir, '.codex/hooks/covenant-pretooluse.mjs'))) { const parent = dirname(dir); if (parent === dir) throw new Error('Codex covenant hook not found'); dir = parent; } await import(pathToFileURL(join(dir, '.codex/hooks/covenant-pretooluse.mjs')).href);\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --input-type=module -e \"import { existsSync } from 'node:fs'; import { dirname, join } from 'node:path'; import { pathToFileURL } from 'node:url'; let dir = process.cwd(); while (!existsSync(join(dir, '.codex/hooks/covenant-pretooluse.mjs'))) { const parent = dirname(dir); if (parent === dir) throw new Error('Codex covenant hook not found'); dir = parent; } await import(pathToFileURL(join(dir, '.codex/hooks/covenant-pretooluse.mjs')).href);\"",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

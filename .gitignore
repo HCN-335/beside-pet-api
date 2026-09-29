@@ -151,3 +151,9 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+# Polydeukes telemetry — local observation data, never committed.
+.polydeukes/
+
+# Generated documentation index and covenant telemetry
+docs/docs.db
+.polydeukes/
