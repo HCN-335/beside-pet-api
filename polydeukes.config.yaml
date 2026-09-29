@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=node_modules/polydeukes/dist/schema/polydeukes.schema.json
+# Project-specific disciplines. Start as advice; promote after observing false positives.
+languages:
+  typescript:
+    productionGlob: 'src/**'
+    testCmd: 'pnpm test -- {scope}'
+protectedPaths:
+  - '.claude/hooks'
+  - '.claude/settings.json'
+  - '.codex/hooks'
+  - '.codex/hooks.json'
+witness:
+  token: 'pdks witness'
+  ttlMinutes: 10
+
+disciplines:
+  - id: no-focused-tests
+    why: Focused tests conceal failures in the rest of the suite.
+    declare:
+      mechanism: added-only
+      scope: { source: 'target.path', include: ['\.(test|spec)\.[cm]?[jt]sx?$'] }
+      supply: { pre: empty, post: empty }
+      extract:
+        before: [{ op: source, of: pre }, { op: lines }, { op: keyByPattern, re: '(\.only\()' }]
+        after: [{ op: source, of: post }, { op: lines }, { op: keyByPattern, re: '(\.only\()' }]
+        added: [{ op: onlyIn, of: after, notIn: before }]
+      relate:
+        - { id: none-added, relation: { op: empty, of: added }, message: 'focused test added: {value}' }
+  - id: no-committed-debugger
+    why: A debugger statement pauses a production request or page.
+    declare:
+      mechanism: added-only
+      scope: { source: 'target.path', include: ['\.[cm]?[jt]sx?$'] }
+      supply: { pre: empty, post: empty }
+      extract:
+        before: [{ op: source, of: pre }, { op: lines }, { op: keyByPattern, re: '(\bdebugger\s*;)' }]
+        after: [{ op: source, of: post }, { op: lines }, { op: keyByPattern, re: '(\bdebugger\s*;)' }]
+        added: [{ op: onlyIn, of: after, notIn: before }]
+      relate:
+        - { id: none-added, relation: { op: empty, of: added }, message: 'debugger added: {value}' }
+  - id: llm-calls-through-adapter
+    why: Model calls belong in the infrastructure LLM adapter so safety and orchestration remain visible.
+    declare:
+      mechanism: added-only
+      scope: { source: 'target.path', include: ['^src/'], exclude: ['^src/support/infrastructure/llm/'] }
+      supply: { pre: empty, post: empty }
+      extract:
+        before: [{ op: source, of: pre }, { op: lines }, { op: keyByPattern, re: '(@anthropic-ai/sdk)' }]
+        after: [{ op: source, of: post }, { op: lines }, { op: keyByPattern, re: '(@anthropic-ai/sdk)' }]
+        added: [{ op: onlyIn, of: after, notIn: before }]
+      relate:
+        - { id: none-added, relation: { op: empty, of: added }, message: 'direct SDK import: {value}' }
+  - id: no-duplicate-abstractions
+    why: Before adding a helper, search for an existing function with the same responsibility and extend it when appropriate.
+    draft: true
+
+sessionDisciplines:
+  - id: no-disabled-gates
+    why: Git verification remains active for every contributor.
+    declare:
+      mechanism: forbidden-command
+      scope: { source: command }
+      extract:
+        hits: [{ op: source, of: command }, { op: lines }, { op: matches, re: 'LEFTHOOK=(0|false|no|off)|core\.hooksPath|--no-verify' }]
+      relate:
+        - { id: gates-armed, relation: { op: empty, of: hits }, message: '{value}' }

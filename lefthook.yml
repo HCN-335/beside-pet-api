@@ -1,0 +1,10 @@
+pre-commit:
+  jobs:
+    - name: covenant
+      run: bash -o pipefail -c 'git diff --cached --no-color --no-ext-diff --no-textconv --src-prefix=a/ --dst-prefix=b/ | ./node_modules/.bin/pdks covenant check --diff'
+    - name: docs
+      run: pnpm docs:check
+    - name: lint
+      run: pnpm lint
+    - name: typecheck
+      run: pnpm typecheck
